@@ -18,7 +18,11 @@ import pretrainedmodels
 import pretrainedmodels.utils
 from model import get_model
 from dataset import FaceDataset
+from dataset import FaceDataset_morph2align
 from defaults import _C as cfg
+import os
+import smtp
+import time
 
 
 def get_args():
@@ -95,7 +99,7 @@ def validate(validate_loader, model, criterion, epoch, device):
     loss_monitor = AverageMeter()
     accuracy_monitor = AverageMeter()
     preds = []
-    gt = []
+    gt = [] # ground truth
 
     with torch.no_grad():
         with tqdm(validate_loader) as _tqdm:
@@ -136,6 +140,9 @@ def validate(validate_loader, model, criterion, epoch, device):
 
 
 def main():
+    print("开始训练时间：")
+    start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    print(start_time)
     args = get_args()
 
     if args.opts:
@@ -164,6 +171,7 @@ def main():
     resume_path = args.resume
 
     if resume_path:
+        print(Path(resume_path).is_file())
         if Path(resume_path).is_file():
             print("=> loading checkpoint '{}'".format(resume_path))
             checkpoint = torch.load(resume_path, map_location="cpu")
@@ -182,12 +190,12 @@ def main():
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss().to(device)
-    train_dataset = FaceDataset(args.data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
+    train_dataset = FaceDataset_morph2align(args.data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
                                 age_stddev=cfg.TRAIN.AGE_STDDEV)
     train_loader = DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True,
                               num_workers=cfg.TRAIN.WORKERS, drop_last=True)
 
-    val_dataset = FaceDataset(args.data_dir, "valid", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    val_dataset = FaceDataset_morph2align(args.data_dir, "valid", img_size=cfg.MODEL.IMG_SIZE, augment=False)
     val_loader = DataLoader(val_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
@@ -195,6 +203,7 @@ def main():
                        last_epoch=start_epoch - 1)
     best_val_mae = 10000.0
     train_writer = None
+    val_mae_list = []
 
     if args.tensorboard is not None:
         opts_prefix = "_".join(args.opts)
@@ -207,6 +216,7 @@ def main():
 
         # validate
         val_loss, val_acc, val_mae = validate(val_loader, model, criterion, epoch, device)
+        val_mae_list.append(val_mae)
 
         if args.tensorboard is not None:
             train_writer.add_scalar("loss", train_loss, epoch)
@@ -215,20 +225,21 @@ def main():
             val_writer.add_scalar("acc", val_acc, epoch)
             val_writer.add_scalar("mae", val_mae, epoch)
 
-        # checkpoint
         if val_mae < best_val_mae:
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
-            model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
-            torch.save(
-                {
-                    'epoch': epoch + 1,
-                    'arch': cfg.MODEL.ARCH,
-                    'state_dict': model_state_dict,
-                    'optimizer_state_dict': optimizer.state_dict()
-                },
-                str(checkpoint_dir.joinpath("epoch{:03d}_{:.5f}_{:.4f}.pth".format(epoch, val_loss, val_mae)))
-            )
             best_val_mae = val_mae
+            # checkpoint
+            if val_mae < 2.3:
+                model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
+                torch.save(
+                    {
+                        'epoch': epoch + 1,
+                        'arch': cfg.MODEL.ARCH,
+                        'state_dict': model_state_dict,
+                        'optimizer_state_dict': optimizer.state_dict()
+                    },
+                    str(checkpoint_dir.joinpath("epoch{:03d}_{:.5f}_{:.4f}.pth".format(epoch, val_loss, val_mae)))
+                )
         else:
             print(f"=> [epoch {epoch:03d}] best val mae was not improved from {best_val_mae:.3f} ({val_mae:.3f})")
 
@@ -238,6 +249,18 @@ def main():
     print("=> training finished")
     print(f"additional opts: {args.opts}")
     print(f"best val mae: {best_val_mae:.3f}")
+    print("结束训练时间：")
+    end_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    print(end_time)
+    # 发邮件
+    smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
+                     "训练耗时: ": smtp.date_gap(start_time, end_time),
+                     "最低val_mae: ": best_val_mae,
+                     "平均val_mae: ": np.array(val_mae_list).mean(),
+                     "img_size: ": cfg.MODEL.IMG_SIZE,
+                     "TRAIN.BATCH_SIZE: ": cfg.TRAIN.BATCH_SIZE})
+    # 关机
+    # os.system("/root/shutdown.sh")
 
 
 if __name__ == '__main__':

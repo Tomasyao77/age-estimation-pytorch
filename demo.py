@@ -16,6 +16,8 @@ from model import get_model
 from defaults import _C as cfg
 
 
+# world='world'
+# print(f"hello{world}")
 def get_args():
     parser = argparse.ArgumentParser(description="Age estimation demo",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -90,18 +92,22 @@ def main():
 
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
+        # parents：如果父目录不存在，是否创建父目录
+        # exist_ok：只有在目录不存在时创建目录，目录已存在时不会抛出异常
 
     # create model
     print("=> creating model '{}'".format(cfg.MODEL.ARCH))
     model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    # device = "cpu"
+    print(device)
     model = model.to(device)
 
     # load checkpoint
     resume_path = args.resume
 
     if resume_path is None:
-        resume_path = Path(__file__).resolve().parent.joinpath("misc", "epoch044_0.02343_3.9984.pth")
+        resume_path = Path(__file__).resolve().parent.joinpath("misc", "epoch044_0.02343_3.9984.pth")  # 参数pth
 
         if not resume_path.is_file():
             print(f"=> model path is not set; start downloading trained model to {resume_path}")
@@ -112,6 +118,7 @@ def main():
     if Path(resume_path).is_file():
         print("=> loading checkpoint '{}'".format(resume_path))
         checkpoint = torch.load(resume_path, map_location="cpu")
+        # checkpoint = torch.load(resume_path)
         model.load_state_dict(checkpoint['state_dict'])
         print("=> loaded checkpoint '{}'".format(resume_path))
     else:
@@ -121,10 +128,12 @@ def main():
         cudnn.benchmark = True
 
     model.eval()
+    # model.train() ：启用 BatchNormalization 和 Dropout
+    # model.eval() ：不启用 BatchNormalization 和 Dropout
     margin = args.margin
     img_dir = args.img_dir
     detector = dlib.get_frontal_face_detector()
-    img_size = cfg.MODEL.IMG_SIZE
+    img_size = cfg.MODEL.IMG_SIZE  # default 224
     image_generator = yield_images_from_dir(img_dir) if img_dir else yield_images()
 
     with torch.no_grad():
@@ -134,7 +143,7 @@ def main():
 
             # detect faces using dlib detector
             detected = detector(input_img, 1)
-            faces = np.empty((len(detected), img_size, img_size, 3))
+            faces = np.empty((len(detected), img_size, img_size, 3))  # 不理解
 
             if len(detected) > 0:
                 for i, d in enumerate(detected):
@@ -152,6 +161,9 @@ def main():
                 outputs = F.softmax(model(inputs), dim=-1).cpu().numpy()
                 ages = np.arange(0, 101)
                 predicted_ages = (outputs * ages).sum(axis=-1)
+                # gt age
+                gt_age = abs(int(name[-6:name.index(".")]) - int(predicted_ages[0]))
+                print(f"{name}-predicted_ages:{predicted_ages} diff:{str(gt_age)}")
 
                 # draw results
                 for i, d in enumerate(detected):

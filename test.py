@@ -11,9 +11,11 @@ import pretrainedmodels
 import pretrainedmodels.utils
 from model import get_model
 from dataset import FaceDataset
+from dataset import FaceDataset_FGNET
+from dataset import FaceDataset_morph2align
 from defaults import _C as cfg
 from train import validate
-
+import shutil
 
 def get_args():
     model_names = sorted(name for name in pretrainedmodels.__dict__
@@ -53,12 +55,14 @@ def main():
         model.load_state_dict(checkpoint['state_dict'])
         print("=> loaded checkpoint '{}'".format(resume_path))
     else:
-        raise ValueError("=> no checkpoint found at '{}'".format(resume_path))
+        raise ValueError("=> no checkpoTrueint found at '{}'".format(resume_path))
 
     if device == "cuda":
         cudnn.benchmark = True
 
-    test_dataset = FaceDataset(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    # test_dataset = FaceDataset(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    # test_dataset = FaceDataset_FGNET(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    test_dataset = FaceDataset_morph2align(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
     test_loader = DataLoader(test_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
                              num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
