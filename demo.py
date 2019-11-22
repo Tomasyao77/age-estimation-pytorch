@@ -12,7 +12,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 import torch.nn.functional as F
-from model import get_model
+from model_dir import get_model
 from defaults import _C as cfg
 
 
@@ -95,8 +95,8 @@ def main():
         # parents：如果父目录不存在，是否创建父目录
         # exist_ok：只有在目录不存在时创建目录，目录已存在时不会抛出异常
 
-    # create model
-    print("=> creating model '{}'".format(cfg.MODEL.ARCH))
+    # create model_dir
+    print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
     model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
@@ -110,7 +110,7 @@ def main():
         resume_path = Path(__file__).resolve().parent.joinpath("misc", "epoch044_0.02343_3.9984.pth")  # 参数pth
 
         if not resume_path.is_file():
-            print(f"=> model path is not set; start downloading trained model to {resume_path}")
+            print(f"=> model_dir path is not set; start downloading trained model_dir to {resume_path}")
             url = "https://github.com/yu4u/age-estimation-pytorch/releases/download/v1.0/epoch044_0.02343_3.9984.pth"
             urllib.request.urlretrieve(url, str(resume_path))
             print("=> download finished")
@@ -128,8 +128,8 @@ def main():
         cudnn.benchmark = True
 
     model.eval()
-    # model.train() ：启用 BatchNormalization 和 Dropout
-    # model.eval() ：不启用 BatchNormalization 和 Dropout
+    # model_dir.train() ：启用 BatchNormalization 和 Dropout
+    # model_dir.eval() ：不启用 BatchNormalization 和 Dropout
     margin = args.margin
     img_dir = args.img_dir
     detector = dlib.get_frontal_face_detector()
@@ -152,8 +152,8 @@ def main():
                     yw1 = max(int(y1 - margin * h), 0)
                     xw2 = min(int(x2 + margin * w), img_w - 1)
                     yw2 = min(int(y2 + margin * h), img_h - 1)
-                    cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 255), 2)
-                    cv2.rectangle(img, (xw1, yw1), (xw2, yw2), (255, 0, 0), 2)
+                    cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 255), 1)
+                    cv2.rectangle(img, (xw1, yw1), (xw2, yw2), (255, 0, 0), 1)
                     faces[i] = cv2.resize(img[yw1:yw2 + 1, xw1:xw2 + 1], (img_size, img_size))
 
                 # predict ages

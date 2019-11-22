@@ -17,8 +17,11 @@ from torch.utils.tensorboard import SummaryWriter
 import pretrainedmodels
 import pretrainedmodels.utils
 from model import get_model
+from model import my_model
 from dataset import FaceDataset
 from dataset import FaceDataset_morph2align
+from dataset import FaceDataset_morph2
+from dataset import FaceDataset_FGNET
 from defaults import _C as cfg
 import os
 import smtp
@@ -35,7 +38,7 @@ def get_args():
     parser.add_argument("--data_dir", type=str, required=True, help="Data root directory")
     parser.add_argument("--resume", type=str, default=None, help="Resume from checkpoint if any")
     parser.add_argument("--checkpoint", type=str, default="checkpoint", help="Checkpoint directory")
-    parser.add_argument("--tensorboard", type=str, default=None, help="Tensorboard log directory")
+    parser.add_argument("--tensorboard", type=str, default=None, help="Tensorboard logs directory")
     parser.add_argument('--multi_gpu', action="store_true", help="Use multi GPUs (data parallel)")
     parser.add_argument("opts", default=[], nargs=argparse.REMAINDER,
                         help="Modify config options using the command-line")
@@ -99,7 +102,7 @@ def validate(validate_loader, model, criterion, epoch, device):
     loss_monitor = AverageMeter()
     accuracy_monitor = AverageMeter()
     preds = []
-    gt = [] # ground truth
+    gt = []  # ground truth
 
     with torch.no_grad():
         with tqdm(validate_loader) as _tqdm:
@@ -109,7 +112,7 @@ def validate(validate_loader, model, criterion, epoch, device):
 
                 # compute output
                 outputs = model(x)
-                preds.append(F.softmax(outputs, dim=-1).cpu().numpy())
+                preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ?
                 gt.append(y.cpu().numpy())
 
                 # valid for validation, not used for test
@@ -129,10 +132,10 @@ def validate(validate_loader, model, criterion, epoch, device):
                     _tqdm.set_postfix(OrderedDict(stage="val", epoch=epoch, loss=loss_monitor.avg),
                                       acc=accuracy_monitor.avg, correct=correct_num, sample_num=sample_num)
 
-    preds = np.concatenate(preds, axis=0)
+    preds = np.concatenate(preds, axis=0)  # 展开成一维向量
     gt = np.concatenate(gt, axis=0)
-    ages = np.arange(0, 101)
-    ave_preds = (preds * ages).sum(axis=-1)
+    ages = np.arange(0, 101)  # softmax后求期望 DEX!
+    ave_preds = (preds * ages).sum(axis=-1)  # axis=0结果一样?
     diff = ave_preds - gt
     mae = np.abs(diff).mean()
 
@@ -153,9 +156,10 @@ def main():
     checkpoint_dir = Path(args.checkpoint)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    # create model
-    print("=> creating model '{}'".format(cfg.MODEL.ARCH))
-    model = get_model(model_name=cfg.MODEL.ARCH)
+    # create model_dir
+    print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
+    # model_dir = get_model(model_name=cfg.MODEL.ARCH)
+    model = my_model()
 
     if cfg.TRAIN.OPT == "sgd":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.TRAIN.LR,
@@ -190,12 +194,12 @@ def main():
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss().to(device)
-    train_dataset = FaceDataset_morph2align(args.data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
-                                age_stddev=cfg.TRAIN.AGE_STDDEV)
+    train_dataset = FaceDataset_morph2(args.data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
+                                      age_stddev=cfg.TRAIN.AGE_STDDEV)
     train_loader = DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True,
                               num_workers=cfg.TRAIN.WORKERS, drop_last=True)
 
-    val_dataset = FaceDataset_morph2align(args.data_dir, "valid", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    val_dataset = FaceDataset_morph2(args.data_dir, "valid", img_size=cfg.MODEL.IMG_SIZE, augment=False)
     val_loader = DataLoader(val_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
@@ -229,7 +233,7 @@ def main():
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 2.3:
+            if val_mae < 2.0:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -252,6 +256,7 @@ def main():
     print("结束训练时间：")
     end_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
     print(end_time)
+    print("训练耗时: " + smtp.date_gap(start_time, end_time))
     # 发邮件
     smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
                      "训练耗时: ": smtp.date_gap(start_time, end_time),
@@ -259,9 +264,19 @@ def main():
                      "平均val_mae: ": np.array(val_mae_list).mean(),
                      "img_size: ": cfg.MODEL.IMG_SIZE,
                      "TRAIN.BATCH_SIZE: ": cfg.TRAIN.BATCH_SIZE})
+    return best_val_mae
     # 关机
     # os.system("/root/shutdown.sh")
 
 
 if __name__ == '__main__':
+    #fgnet train 82 group
+    # args = get_args()
+    # fgnet_root = args.data_dir
+    # best_val_mae_arr = []
+    # for i in range(1, 83):
+    #     tmp = str(i) if i > 9 else "0" + str(i)
+    #     data_dir = Path(fgnet_root).joinpath(tmp)
+    #     best_val_mae_arr.append(main(str(data_dir)))
+    # print(f"all train finished and best_val_mae_arr is:{best_val_mae_arr}")
     main()

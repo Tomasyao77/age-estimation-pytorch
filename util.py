@@ -18,7 +18,7 @@ def get_checkpoint(ckp_path):
 
 if __name__ == '__main__':
     # print(get_model(
-    #     '/media/zouy/workspace/gitcloneroot/age-estimation-pytorch/model/se_resnext50_32x4d-a260b3a4.pth',
+    #     '/media/zouy/workspace/gitcloneroot/age-estimation-pytorch/model_dir/se_resnext50_32x4d-a260b3a4.pth',
     #     '/media/zouy/workspace/gitcloneroot/age-estimation-pytorch/misc/epoch044_0.02343_3.9984.pth'))
     # print(get_checkpoint(
     #     '/media/zouy/workspace/gitcloneroot/age-estimation-pytorch/misc/epoch044_0.02343_3.9984.pth'))
