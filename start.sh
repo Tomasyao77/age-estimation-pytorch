@@ -4,12 +4,12 @@ basepath="/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytor
 #basepath="/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"
 DATE=`date +%Y%m%d_%H%M%S`
 
-data_dir=${basepath}/data_dir/morph2
+data_dir=${basepath}/data_dir/FG-NET-leave1out
 #data_dir=/media/gisdom/data11/tomasyao/workspace/pycharm_ws/mypython/dataset #fgnet alltest
-tensorboard=${basepath}/tf_log/morph2_sfv2
-checkpoint=${basepath}/checkpoint/morph2_sfv2
+tensorboard=${basepath}/tf_log/FG-NET-leave1out
+checkpoint=${basepath}/checkpoint/FG-NET-leave1out
 #log的目录必须存在 上面的目录不存在会自动创建
-logs=${basepath}/logs/morph2_sfv2/${DATE}_train_log
+logs=${basepath}/logs/FG-NET-leave1out/${DATE}_train_log_l1loss
 
 if [ $# -ne 1 ] #有且仅有一个参数，否则退出
 then
@@ -33,7 +33,7 @@ then
 	source activate torchg
 	cd ${basepath}
 	#测试速度很快所以就不在后台运行了
-	python ./test.py --data_dir=${data_dir} --resume=${checkpoint}/epoch079_0.02234_2.2617.pth
+	python ./test.py --data_dir=${data_dir} --resume=${checkpoint}/epoch078_0.02798_2.6980.pth
 elif [ $1 = "demo" ]
 then
 	echo "demo..."

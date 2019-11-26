@@ -9,7 +9,8 @@ import torch.utils.data
 from torch.utils.data import DataLoader
 import pretrainedmodels
 import pretrainedmodels.utils
-from model_dir import get_model
+from model import get_model
+from model import my_model
 from dataset import FaceDataset
 from dataset import FaceDataset_FGNET
 from dataset import FaceDataset_morph2align
@@ -43,7 +44,8 @@ def main():
 
     # create model_dir
     print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
-    model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
+    # model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
+    model = my_model()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
 
@@ -62,8 +64,9 @@ def main():
         cudnn.benchmark = True
 
     # test_dataset = FaceDataset(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
-    test_dataset = FaceDataset_FGNET(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    # test_dataset = FaceDataset_FGNET(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
     # test_dataset = FaceDataset_morph2(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    test_dataset = FaceDataset_morph2align(args.data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
     test_loader = DataLoader(test_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
                              num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 

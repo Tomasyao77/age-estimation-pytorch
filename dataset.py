@@ -17,7 +17,7 @@ class ImgAugTransform:
                 iaa.Sometimes(0.25, iaa.GaussianBlur(sigma=(0, 3.0)))
             ]),
             iaa.Affine(  # 仿射变换
-                rotate=(-20, 20),  # 旋转
+                rotate=(-10, 10),  # 旋转
                 mode="edge",  # 定义填充图像外区域的方法
                 scale={"x": (0.95, 1.05), "y": (0.95, 1.05)},  # 缩放
                 translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)}  # 平移
@@ -76,7 +76,7 @@ class FaceDataset(Dataset):
         if self.augment:
             age += np.random.randn() * self.std[idx] * self.age_stddev  # why?
 
-        img = cv2.imread(str(img_path), 1)  # 读灰度图
+        img = cv2.imread(str(img_path), 1)  # 读彩色图
         img = cv2.resize(img, (self.img_size, self.img_size))
         img = self.transform(img).astype(np.float32)
         return torch.from_numpy(np.transpose(img, (2, 0, 1))), np.clip(round(age), 0, 100)
@@ -125,7 +125,7 @@ class FaceDataset_FGNET(Dataset):
         if self.augment:
             age += np.random.randn() * self.std[idx] * self.age_stddev  # why?
 
-        img = cv2.imread(str(img_path), 1)  # 读灰度图
+        img = cv2.imread(str(img_path), 1)  # 读彩色图
         img = cv2.resize(img, (self.img_size, self.img_size))
         img = self.transform(img).astype(np.float32)
         return torch.from_numpy(np.transpose(img, (2, 0, 1))), np.clip(round(age), 0, 100)
@@ -174,7 +174,7 @@ class FaceDataset_morph2align(Dataset):
         if self.augment:
             age += np.random.randn() * self.std[idx] * self.age_stddev  # why?
 
-        img = cv2.imread(str(img_path), 1)  # 读灰度图
+        img = cv2.imread(str(img_path), 1)  # 读彩色图
         img = cv2.resize(img, (self.img_size, self.img_size))
         img = self.transform(img).astype(np.float32)
         return torch.from_numpy(np.transpose(img, (2, 0, 1))), np.clip(round(age), 0, 100)
@@ -223,11 +223,17 @@ class FaceDataset_morph2(Dataset):
         if self.augment:
             age += np.random.randn() * self.std[idx] * self.age_stddev  # why?
 
-        img = cv2.imread(str(img_path), 1)  # 读灰度图
+        img = cv2.imread(str(img_path), 1)  # 读彩色图
         img = cv2.resize(img, (self.img_size, self.img_size))
         img = self.transform(img).astype(np.float32)
         return torch.from_numpy(np.transpose(img, (2, 0, 1))), np.clip(round(age), 0, 100)
-        # transpose(img, (2,0,1))不好理解 clip是越界则取边界
+        # ------------np.ndarray转为torch.Tensor------------------------------------
+        # numpy image: H x W x C
+        # torch image:(nSample) x C x H x W
+        # np.transpose(xxx, (2, 0, 1))   # 将 H x W x C 转化为 C x H x W
+
+        # torch image: C x H x W
+        #clip是越界则取边界
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

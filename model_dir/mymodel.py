@@ -3,7 +3,11 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from pretrainedmodels.models.senet import SEModule
 from torch.nn import init
+from model_dir import cbam
+
+from tensorboardX import SummaryWriter
 
 
 def _make_divisible(v, divisor, min_value=None):
@@ -82,6 +86,7 @@ class BasicUnit(nn.Module):
         self.residual = residual
         self.groups = groups
         self.SE = SE
+        self.sa = cbam.SpatialAttention()  # 空间注意力机制
         if self.SE:
             self.SELayer = SELayer(self.right_part_out, 2)  # TODO
 
@@ -101,6 +106,7 @@ class BasicUnit(nn.Module):
 
         if self.SE:
             out = self.SELayer(out)
+            out = self.sa(out) * out
         if self.residual and self.inplanes == self.outplanes:
             out += right
 
@@ -153,8 +159,8 @@ class ShuffleNetV2(nn.Module):
     """ShuffleNetV2 implementation.
     """
 
-    def __init__(self, scale=1.0, in_channels=3, c_tag=0.5, num_classes=101, activation=nn.ReLU,
-                 SE=False, residual=False, groups=2):
+    def __init__(self, scale=2.0, in_channels=3, c_tag=0.5, num_classes=101, activation=nn.ReLU,
+                 SE=True, residual=True, groups=2):
         """
         ShuffleNetV2 constructor
         :param scale:
@@ -182,7 +188,7 @@ class ShuffleNetV2(nn.Module):
         self.num_of_channels = {0.5: [24, 48, 96, 192, 1024], 1: [24, 116, 232, 464, 1024],
                                 1.5: [24, 176, 352, 704, 1024], 2: [24, 244, 488, 976, 2048]}
         self.c = [_make_divisible(chan, groups) for chan in self.num_of_channels[scale]]
-        self.n = [3, 8, 3]  # TODO: should be [3,7,3]
+        self.n = [3, 7, 3]  # TODO: should be [3,7,3]
         self.conv1 = nn.Conv2d(in_channels, self.c[0], kernel_size=3, bias=False, stride=2, padding=1)
         self.bn1 = nn.BatchNorm2d(self.c[0])
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2)
@@ -192,7 +198,9 @@ class ShuffleNetV2(nn.Module):
         self.bn_last = nn.BatchNorm2d(self.c[-1])
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(self.c[-1], self.num_classes)
+        self.last_fc = nn.Linear(self.num_classes, 1)
         self.init_params()
+        # self.se_module = SEModule(planes, reduction)
 
     def init_params(self):
         for m in self.modules():
@@ -211,6 +219,10 @@ class ShuffleNetV2(nn.Module):
     def _make_stage(self, inplanes, outplanes, n, stage):
         modules = OrderedDict()
         stage_name = "ShuffleUnit{}".format(stage)
+
+        # tomasyao add se_module before DownsampleUnit for every ShuffleConvs_
+        # se_moudule = SEModule(inplanes, reduction=2)  # 2 16
+        # modules["se_module"] = se_moudule
 
         # First module is the only one utilizing stride
         first_module = DownsampleUnit(inplanes=inplanes, activation=self.activation_type, c_tag=self.c_tag,
@@ -254,9 +266,13 @@ class ShuffleNetV2(nn.Module):
         x = self.avgpool(x)
 
         # flatten for input to fully-connected layer
+        # -1是自适应的意思，x.size(0)是batch size，比如原来的数据一共12个，batch size为2，
+        # 就会view成2*6，batch size为4，就会就会view成4*3
         x = x.view(x.size(0), -1)
         x = self.fc(x)
-        return F.log_softmax(x, dim=1)
+        y = self.last_fc(x)
+        return x, y
+        # return F.log_softmax(x, dim=1)  # 对每一行进行softmax
 
 
 if __name__ == "__main__":
@@ -264,3 +280,8 @@ if __name__ == "__main__":
     """
     model1 = ShuffleNetV2()
     print(model1)
+
+    # dummy_input = torch.rand(10, 3, 224, 224)  # 假设输入10张1*224*224的图片
+    # model = ShuffleNetV2()
+    # with SummaryWriter(comment='LeNet') as w:
+    #     w.add_graph(model, (dummy_input,))

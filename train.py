@@ -18,6 +18,7 @@ import pretrainedmodels
 import pretrainedmodels.utils
 from model import get_model
 from model import my_model
+from model import MyLoss_l1
 from dataset import FaceDataset
 from dataset import FaceDataset_morph2align
 from dataset import FaceDataset_morph2
@@ -65,20 +66,35 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
     loss_monitor = AverageMeter()
     accuracy_monitor = AverageMeter()
 
+    criterion_l1 = MyLoss_l1()
+
     with tqdm(train_loader) as _tqdm:
         for x, y in _tqdm:
             x = x.to(device)
             y = y.to(device)
 
+            # print("x:")
+            # print(x)
+            # print("y:")
+            # print(y)
+
             # compute output
-            outputs = model(x)
+            outputs, ouput1val = model(x)
+            # outputs = model(x)
+            # print(outputs)  # 2*numclasses
+            # print(ouput1val)  # 2*batchsize
 
             # calc loss
-            loss = criterion(outputs, y)
+            # loss再加一个mae损失
+            # print("criterion(outputs, y):")
+            # print(criterion(outputs, y)) #tensor(4.6222, device='cuda:0', grad_fn=<NllLossBackward>)
+            # print("criterion_l1(ouput1val, y.float()):")
+            # print(criterion_l1(ouput1val, y.float()))  # Long
+            loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * cfg.LOSS.l1
             cur_loss = loss.item()
 
             # calc accuracy
-            _, predicted = outputs.max(1)
+            _, predicted = outputs.max(1)  # 返回每一行最大值组成的一维数组
             correct_num = predicted.eq(y).sum().item()
 
             # measure accuracy and record loss
@@ -102,7 +118,10 @@ def validate(validate_loader, model, criterion, epoch, device):
     loss_monitor = AverageMeter()
     accuracy_monitor = AverageMeter()
     preds = []
+    preds_1val = []
     gt = []  # ground truth
+
+    criterion_l1 = MyLoss_l1()
 
     with torch.no_grad():
         with tqdm(validate_loader) as _tqdm:
@@ -111,14 +130,16 @@ def validate(validate_loader, model, criterion, epoch, device):
                 y = y.to(device)
 
                 # compute output
-                outputs = model(x)
-                preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ?
+                outputs, ouput1val = model(x)
+                # outputs = model(x)
+                preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ? 方便后面求期望
+                preds_1val.append(ouput1val.cpu().numpy())
                 gt.append(y.cpu().numpy())
 
                 # valid for validation, not used for test
                 if criterion is not None:
                     # calc loss
-                    loss = criterion(outputs, y)
+                    loss = criterion(outputs, y)  + criterion_l1(ouput1val, y.float()) * cfg.LOSS.l1
                     cur_loss = loss.item()
 
                     # calc accuracy
@@ -132,17 +153,20 @@ def validate(validate_loader, model, criterion, epoch, device):
                     _tqdm.set_postfix(OrderedDict(stage="val", epoch=epoch, loss=loss_monitor.avg),
                                       acc=accuracy_monitor.avg, correct=correct_num, sample_num=sample_num)
 
-    preds = np.concatenate(preds, axis=0)  # 展开成一维向量
+    preds = np.concatenate(preds, axis=0)  # 展开
+    preds_1val = np.concatenate(preds_1val, axis=0)
     gt = np.concatenate(gt, axis=0)
-    ages = np.arange(0, 101)  # softmax后求期望 DEX!
+    ages = np.arange(0, 101)  # softmax后求期望,得出预测的年龄 DEX!
     ave_preds = (preds * ages).sum(axis=-1)  # axis=0结果一样?
+    # 分类和回归的结果取平均
+    # ave_preds = (ave_preds + preds_1val) / 2.0
     diff = ave_preds - gt
     mae = np.abs(diff).mean()
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
 
-def main():
+def main(data_dir):
     print("开始训练时间：")
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
     print(start_time)
@@ -193,13 +217,14 @@ def main():
     if device == "cuda":
         cudnn.benchmark = True
 
+    # 损失计算准则
     criterion = nn.CrossEntropyLoss().to(device)
-    train_dataset = FaceDataset_morph2(args.data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
-                                      age_stddev=cfg.TRAIN.AGE_STDDEV)
+    train_dataset = FaceDataset_FGNET(data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
+                                       age_stddev=cfg.TRAIN.AGE_STDDEV)
     train_loader = DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True,
                               num_workers=cfg.TRAIN.WORKERS, drop_last=True)
 
-    val_dataset = FaceDataset_morph2(args.data_dir, "valid", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    val_dataset = FaceDataset_FGNET(data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
     val_loader = DataLoader(val_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
@@ -233,7 +258,7 @@ def main():
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 2.0:
+            if val_mae < 2.1:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -258,25 +283,36 @@ def main():
     print(end_time)
     print("训练耗时: " + smtp.date_gap(start_time, end_time))
     # 发邮件
-    smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
-                     "训练耗时: ": smtp.date_gap(start_time, end_time),
-                     "最低val_mae: ": best_val_mae,
-                     "平均val_mae: ": np.array(val_mae_list).mean(),
-                     "img_size: ": cfg.MODEL.IMG_SIZE,
-                     "TRAIN.BATCH_SIZE: ": cfg.TRAIN.BATCH_SIZE})
+    # smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
+    #                  "训练耗时: ": smtp.date_gap(start_time, end_time),
+    #                  "最低val_mae: ": best_val_mae,
+    #                  "平均val_mae: ": np.array(val_mae_list).mean(),
+    #                  "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
+    #                  "TRAIN.BATCH_SIZE: ": cfg.TRAIN.BATCH_SIZE,
+    #                  "LOSS.l1: ": cfg.LOSS.l1,
+    #                  "TRAIN.LR: ": cfg.TRAIN.LR,
+    #                  "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
+    #                  "TRAIN.LR_DECAY_RATE:": cfg.TRAIN.LR_DECAY_RATE,
+    #                  "TRAIN.OPT: ": cfg.TRAIN.OPT,
+    #                  "MODEL.ARCH:": cfg.MODEL.ARCH})
     return best_val_mae
     # 关机
     # os.system("/root/shutdown.sh")
 
 
 if __name__ == '__main__':
-    #fgnet train 82 group
-    # args = get_args()
-    # fgnet_root = args.data_dir
-    # best_val_mae_arr = []
-    # for i in range(1, 83):
-    #     tmp = str(i) if i > 9 else "0" + str(i)
-    #     data_dir = Path(fgnet_root).joinpath(tmp)
-    #     best_val_mae_arr.append(main(str(data_dir)))
-    # print(f"all train finished and best_val_mae_arr is:{best_val_mae_arr}")
-    main()
+    # fgnet train 82 group
+    args = get_args()
+    fgnet_root = args.data_dir
+    best_val_mae_arr = []
+    for i in range(1, 83):
+        tmp = str(i) if i > 9 else "0" + str(i)
+        data_dir = Path(fgnet_root).joinpath(tmp)
+        best_val_mae_arr.append(main(str(data_dir)))
+    print(f"all train finished and best_val_mae_arr is:{best_val_mae_arr}")
+
+    # cus_arg_batchsize = [128, 64]
+    # for i in cus_arg_batchsize:
+    #     print(main(i))
+
+    # main() #morph2
