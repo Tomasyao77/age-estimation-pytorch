@@ -160,7 +160,7 @@ class ShuffleNetV2(nn.Module):
     """
 
     def __init__(self, scale=2.0, in_channels=3, c_tag=0.5, num_classes=101, activation=nn.ReLU,
-                 SE=True, residual=True, groups=2):
+                 SE=False, residual=False, groups=2):
         """
         ShuffleNetV2 constructor
         :param scale:

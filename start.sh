@@ -1,15 +1,13 @@
 #! /bin/bash
 #项目根目录
 basepath="/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"
-#basepath="/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"
 DATE=`date +%Y%m%d_%H%M%S`
 
-data_dir=${basepath}/data_dir/FG-NET-leave1out
-#data_dir=/media/gisdom/data11/tomasyao/workspace/pycharm_ws/mypython/dataset #fgnet alltest
-tensorboard=${basepath}/tf_log/FG-NET-leave1out
-checkpoint=${basepath}/checkpoint/FG-NET-leave1out
+data_dir=${basepath}/data_dir/morph2
+tensorboard=${basepath}/tf_log/morph2
+checkpoint=${basepath}/checkpoint/morph2
 #log的目录必须存在 上面的目录不存在会自动创建
-logs=${basepath}/logs/FG-NET-leave1out/${DATE}_train_log_l1loss
+logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
 
 if [ $# -ne 1 ] #有且仅有一个参数，否则退出
 then
@@ -25,8 +23,8 @@ then
 	echo "train..."
 	source activate torchg
 	cd ${basepath}
-	setsid python ./train.py --data_dir=${data_dir} --tensorboard=${tensorboard} --checkpoint=${checkpoint} > ${logs} 2>&1 &
-#	setsid python ./train.py --data_dir=${data_dir} --checkpoint=${checkpoint} > ${logs} 2>&1 &
+#	setsid python ./train.py --data_dir=${data_dir} --tensorboard=${tensorboard} --checkpoint=${checkpoint} > ${logs} 2>&1 &
+	setsid python ./train.py > ${logs} 2>&1 &
 elif [ $1 = "test" ]
 then
 	echo "test..."

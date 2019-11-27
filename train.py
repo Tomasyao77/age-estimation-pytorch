@@ -19,10 +19,7 @@ import pretrainedmodels.utils
 from model import get_model
 from model import my_model
 from model import MyLoss_l1
-from dataset import FaceDataset
-from dataset import FaceDataset_morph2align
 from dataset import FaceDataset_morph2
-from dataset import FaceDataset_FGNET
 from defaults import _C as cfg
 import os
 import smtp
@@ -36,7 +33,7 @@ def get_args():
                          and callable(pretrainedmodels.__dict__[name]))
     parser = argparse.ArgumentParser(description=f"available models: {model_names}",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--data_dir", type=str, required=True, help="Data root directory")
+    # parser.add_argument("--data_dir", type=str, required=True, help="Data root directory")
     parser.add_argument("--resume", type=str, default=None, help="Resume from checkpoint if any")
     parser.add_argument("--checkpoint", type=str, default="checkpoint", help="Checkpoint directory")
     parser.add_argument("--tensorboard", type=str, default=None, help="Tensorboard logs directory")
@@ -61,7 +58,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def train(train_loader, model, criterion, optimizer, epoch, device):
+def train(train_loader, model, criterion, optimizer, epoch, device, l1loss=0.0):
     model.train()
     loss_monitor = AverageMeter()
     accuracy_monitor = AverageMeter()
@@ -72,11 +69,6 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
         for x, y in _tqdm:
             x = x.to(device)
             y = y.to(device)
-
-            # print("x:")
-            # print(x)
-            # print("y:")
-            # print(y)
 
             # compute output
             outputs, ouput1val = model(x)
@@ -90,7 +82,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
             # print(criterion(outputs, y)) #tensor(4.6222, device='cuda:0', grad_fn=<NllLossBackward>)
             # print("criterion_l1(ouput1val, y.float()):")
             # print(criterion_l1(ouput1val, y.float()))  # Long
-            loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * cfg.LOSS.l1
+            loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
             cur_loss = loss.item()
 
             # calc accuracy
@@ -113,7 +105,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device):
     return loss_monitor.avg, accuracy_monitor.avg
 
 
-def validate(validate_loader, model, criterion, epoch, device):
+def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     model.eval()
     loss_monitor = AverageMeter()
     accuracy_monitor = AverageMeter()
@@ -139,7 +131,7 @@ def validate(validate_loader, model, criterion, epoch, device):
                 # valid for validation, not used for test
                 if criterion is not None:
                     # calc loss
-                    loss = criterion(outputs, y)  + criterion_l1(ouput1val, y.float()) * cfg.LOSS.l1
+                    loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
                     cur_loss = loss.item()
 
                     # calc accuracy
@@ -166,24 +158,37 @@ def validate(validate_loader, model, criterion, epoch, device):
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
 
-def main(data_dir):
+def main(mydict):
     print("开始训练时间：")
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
     print(start_time)
+    # py脚本额外参数
     args = get_args()
+    # main函数传入参数
+    my_data_dir = mydict["data_dir"]
+    my_tensorboard = mydict["tensorboard"]
+    my_checkpoint = mydict["checkpoint"]
+    my_ifSE = mydict["ifSE"]
+    my_l1loss = mydict["l1loss"]
+    if my_l1loss:
+        l1loss = 1.0
+    else:
+        l1loss = 0.0
 
     if args.opts:
         cfg.merge_from_list(args.opts)
 
     cfg.freeze()
     start_epoch = 0
-    checkpoint_dir = Path(args.checkpoint)
+
+    # checkpoint_dir = Path(args.checkpoint)
+    checkpoint_dir = Path(my_checkpoint)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     # create model_dir
     print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
     # model_dir = get_model(model_name=cfg.MODEL.ARCH)
-    model = my_model()
+    model = my_model(my_ifSE)
 
     if cfg.TRAIN.OPT == "sgd":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.TRAIN.LR,
@@ -197,7 +202,6 @@ def main(data_dir):
 
     # optionally resume from a checkpoint
     resume_path = args.resume
-
     if resume_path:
         print(Path(resume_path).is_file())
         if Path(resume_path).is_file():
@@ -219,13 +223,13 @@ def main(data_dir):
 
     # 损失计算准则
     criterion = nn.CrossEntropyLoss().to(device)
-    train_dataset = FaceDataset_FGNET(data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
+    train_dataset = FaceDataset_morph2(my_data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
                                        age_stddev=cfg.TRAIN.AGE_STDDEV)
-    train_loader = DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True,
+    train_loader = DataLoader(train_dataset, batch_size=cfg.BATCH_SIZE, shuffle=True,
                               num_workers=cfg.TRAIN.WORKERS, drop_last=True)
 
-    val_dataset = FaceDataset_FGNET(data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
-    val_loader = DataLoader(val_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
+    val_dataset = FaceDataset_morph2(my_data_dir, "valid", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    val_loader = DataLoader(val_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
     scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=cfg.TRAIN.LR_DECAY_RATE,
@@ -236,15 +240,15 @@ def main(data_dir):
 
     if args.tensorboard is not None:
         opts_prefix = "_".join(args.opts)
-        train_writer = SummaryWriter(log_dir=args.tensorboard + "/" + opts_prefix + "_train")
-        val_writer = SummaryWriter(log_dir=args.tensorboard + "/" + opts_prefix + "_val")
+        train_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_train")
+        val_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_val")
 
     for epoch in range(start_epoch, cfg.TRAIN.EPOCHS):
         # train
-        train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device)
+        train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device, l1loss)
 
         # validate
-        val_loss, val_acc, val_mae = validate(val_loader, model, criterion, epoch, device)
+        val_loss, val_acc, val_mae = validate(val_loader, model, criterion, epoch, device, l1loss)
         val_mae_list.append(val_mae)
 
         if args.tensorboard is not None:
@@ -258,7 +262,7 @@ def main(data_dir):
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 2.1:
+            if val_mae < 3.2:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -283,36 +287,55 @@ def main(data_dir):
     print(end_time)
     print("训练耗时: " + smtp.date_gap(start_time, end_time))
     # 发邮件
-    # smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
-    #                  "训练耗时: ": smtp.date_gap(start_time, end_time),
-    #                  "最低val_mae: ": best_val_mae,
-    #                  "平均val_mae: ": np.array(val_mae_list).mean(),
-    #                  "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
-    #                  "TRAIN.BATCH_SIZE: ": cfg.TRAIN.BATCH_SIZE,
-    #                  "LOSS.l1: ": cfg.LOSS.l1,
-    #                  "TRAIN.LR: ": cfg.TRAIN.LR,
-    #                  "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
-    #                  "TRAIN.LR_DECAY_RATE:": cfg.TRAIN.LR_DECAY_RATE,
-    #                  "TRAIN.OPT: ": cfg.TRAIN.OPT,
-    #                  "MODEL.ARCH:": cfg.MODEL.ARCH})
+    smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
+                     "训练耗时: ": smtp.date_gap(start_time, end_time),
+                     "最低val_mae: ": best_val_mae,
+                     "平均val_mae: ": np.array(val_mae_list).mean(),
+                     "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
+                     "BATCH_SIZE: ": cfg.BATCH_SIZE,
+                     "LOSS.l1: ": cfg.LOSS.l1,
+                     "TRAIN.LR: ": cfg.TRAIN.LR,
+                     "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
+                     "TRAIN.LR_DECAY_RATE:": cfg.TRAIN.LR_DECAY_RATE,
+                     "TRAIN.OPT: ": cfg.TRAIN.OPT,
+                     "MODEL.ARCH:": cfg.MODEL.ARCH})
     return best_val_mae
-    # 关机
-    # os.system("/root/shutdown.sh")
 
 
 if __name__ == '__main__':
-    # fgnet train 82 group
-    args = get_args()
-    fgnet_root = args.data_dir
-    best_val_mae_arr = []
-    for i in range(1, 83):
-        tmp = str(i) if i > 9 else "0" + str(i)
-        data_dir = Path(fgnet_root).joinpath(tmp)
-        best_val_mae_arr.append(main(str(data_dir)))
-    print(f"all train finished and best_val_mae_arr is:{best_val_mae_arr}")
+    # morph2和morph2_align数据集训练 各训练4次共8次
+    start_time = smtp.print_time("全部开始训练!!!")
+    # get_args()
+    tf_log = cfg.tf_log[0]
+    ckpt = cfg.ckpt[0]
+    data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
 
-    # cus_arg_batchsize = [128, 64]
-    # for i in cus_arg_batchsize:
-    #     print(main(i))
+    main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2"], "checkpoint": ckpt["morph2"],
+          "ifSE": False, "l1loss": False})
+    time.sleep(600)  # sleep 10 min
+    main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_l1"], "checkpoint": ckpt["morph2_l1"],
+          "ifSE": False, "l1loss": True})
+    time.sleep(600)  # sleep 10 min
+    main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2"], "checkpoint": ckpt["morph2_sfv2"],
+          "ifSE": True, "l1loss": False})
+    time.sleep(600)  # sleep 10 min
+    main(
+        {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2_l1"], "checkpoint": ckpt["morph2_sfv2_l1"],
+         "ifSE": True, "l1loss": True})
+    time.sleep(600)  # sleep 10 min
 
-    # main() #morph2
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align"],
+          "checkpoint": ckpt["morph2_align"], "ifSE": False, "l1loss": False})
+    time.sleep(600)  # sleep 10 min
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_l1"],
+          "checkpoint": ckpt["morph2_align_l1"], "ifSE": False, "l1loss": True})
+    time.sleep(600)  # sleep 10 min
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2"],
+          "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": False})
+    time.sleep(600)  # sleep 10 min
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2_l1"],
+          "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True})
+
+    end_time = smtp.print_time("全部训练结束!!!")
+    print(smtp.date_gap(start_time, end_time))
+    smtp.main(dict_={"morph2全部训练耗时: ": smtp.date_gap(start_time, end_time)})

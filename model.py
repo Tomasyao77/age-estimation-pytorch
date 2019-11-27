@@ -29,9 +29,12 @@ def get_model(model_name="se_resnext50_32x4d", num_classes=101, pretrained="imag
     return model
 
 
-def my_model():
+def my_model(ifSE):
     # ShuffleNetV2
-    return ShuffleNetV2()
+    if ifSE:
+        return ShuffleNetV2(SE=True, residual=True)
+    else:
+        return ShuffleNetV2()
     # return cbam.resnet18_cbam(num_classes=101)
 
 def main():
