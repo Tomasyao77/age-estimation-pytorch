@@ -293,7 +293,7 @@ def main(mydict):
                      "平均val_mae: ": np.array(val_mae_list).mean(),
                      "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
                      "BATCH_SIZE: ": cfg.BATCH_SIZE,
-                     "LOSS.l1: ": cfg.LOSS.l1,
+                     "LOSS.l1: ": l1loss,
                      "TRAIN.LR: ": cfg.TRAIN.LR,
                      "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
                      "TRAIN.LR_DECAY_RATE:": cfg.TRAIN.LR_DECAY_RATE,
