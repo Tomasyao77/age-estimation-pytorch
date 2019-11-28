@@ -3,8 +3,8 @@ import os
 
 
 def log():
-    f = open("../logs/20191121_101111_train_log", "r")
-    w = open("../logs/20191121_101111_train_log1", "a")
+    f = open("../logs/20191126_145955_train_log_l1loss", "r")
+    w = open("../logs/20191126_145955_train_log_l1loss1", "a")
     lines = f.readlines()  # 读取全部内容
     for line in lines:
         if 'best val mae' in line:
