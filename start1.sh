@@ -23,8 +23,8 @@ then
 	echo "train..."
 	source activate torchg
 	cd ${basepath}
-#	setsid python ./train.py --data_dir=${data_dir} --tensorboard=${tensorboard} --checkpoint=${checkpoint} > ${logs} 2>&1 &
-	setsid python ./train.py > ${logs} 2>&1 &
+#	setsid python ./train1.py --data_dir=${data_dir} --tensorboard=${tensorboard} --checkpoint=${checkpoint} > ${logs} 2>&1 &
+	setsid python ./train1.py > ${logs} 2>&1 &
 elif [ $1 = "test" ]
 then
 	echo "test..."
