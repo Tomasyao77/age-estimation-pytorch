@@ -51,6 +51,10 @@ _C.TRAIN.MOMENTUM = 0.9
 _C.TRAIN.WEIGHT_DECAY = 0.0
 _C.TRAIN.AGE_STDDEV = 1.0  # 年龄标准差
 
+# Test
+_C.TEST = CN()
+_C.TEST.logs = _C.BASE + "/test_logs"
+
 # loss
 _C.LOSS = CN()
 _C.LOSS.l1 = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]

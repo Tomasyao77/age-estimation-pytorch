@@ -8,6 +8,7 @@ tensorboard=${basepath}/tf_log/morph2
 checkpoint=${basepath}/checkpoint/morph2
 #log的目录必须存在 上面的目录不存在会自动创建
 logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
+logs_test=${basepath}/logs/morph2_all/${DATE}_morph2_all_test_log
 
 if [ $# -ne 1 ] #有且仅有一个参数，否则退出
 then
@@ -31,7 +32,7 @@ then
 	source activate torchg
 	cd ${basepath}
 	#测试速度很快所以就不在后台运行了
-	python ./test.py --data_dir=${data_dir} --resume=${checkpoint}/epoch078_0.02798_2.6980.pth
+	python ./test.py > ${logs_test} 2>&1 &
 elif [ $1 = "demo" ]
 then
 	echo "demo..."

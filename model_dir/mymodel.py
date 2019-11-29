@@ -283,5 +283,5 @@ if __name__ == "__main__":
 
     # dummy_input = torch.rand(10, 3, 224, 224)  # 假设输入10张1*224*224的图片
     # model = ShuffleNetV2()
-    # with SummaryWriter(comment='LeNet') as w:
+    # with SummaryWriter(comment='ShuffleNetV2') as w:
     #     w.add_graph(model, (dummy_input,))
