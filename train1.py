@@ -219,11 +219,11 @@ def main(data_dir):
     criterion = nn.CrossEntropyLoss().to(device)
     train_dataset = FaceDataset_FGNET(data_dir, "train", img_size=cfg.MODEL.IMG_SIZE, augment=True,
                                       age_stddev=cfg.TRAIN.AGE_STDDEV)
-    train_loader = DataLoader(train_dataset, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=True,
+    train_loader = DataLoader(train_dataset, batch_size=cfg.BATCH_SIZE, shuffle=True,
                               num_workers=cfg.TRAIN.WORKERS, drop_last=True)
 
     val_dataset = FaceDataset_FGNET(data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
-    val_loader = DataLoader(val_dataset, batch_size=cfg.TEST.BATCH_SIZE, shuffle=False,
+    val_loader = DataLoader(val_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
     scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=cfg.TRAIN.LR_DECAY_RATE,

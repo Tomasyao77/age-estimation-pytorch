@@ -157,6 +157,65 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
+def validate_cs(validate_loader, model, criterion, epoch, device, l1loss=0.0):
+    model.eval()
+    loss_monitor = AverageMeter()
+    accuracy_monitor = AverageMeter()
+    preds = []
+    preds_1val = []
+    gt = []  # ground truth
+
+    criterion_l1 = MyLoss_l1()
+
+    with torch.no_grad():
+        with tqdm(validate_loader) as _tqdm:
+            for i, (x, y) in enumerate(_tqdm):
+                x = x.to(device)
+                y = y.to(device)
+
+                # compute output
+                outputs, ouput1val = model(x)
+                # outputs = model(x)
+                preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ? 方便后面求期望
+                preds_1val.append(ouput1val.cpu().numpy())
+                gt.append(y.cpu().numpy())
+
+                # valid for validation, not used for test
+                if criterion is not None:
+                    # calc loss
+                    loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
+                    cur_loss = loss.item()
+
+                    # calc accuracy
+                    _, predicted = outputs.max(1)
+                    correct_num = predicted.eq(y).sum().item()
+
+                    # measure accuracy and record loss
+                    sample_num = x.size(0)
+                    loss_monitor.update(cur_loss, sample_num)
+                    accuracy_monitor.update(correct_num, sample_num)
+                    _tqdm.set_postfix(OrderedDict(stage="val", epoch=epoch, loss=loss_monitor.avg),
+                                      acc=accuracy_monitor.avg, correct=correct_num, sample_num=sample_num)
+
+    preds = np.concatenate(preds, axis=0)  # 展开
+    preds_1val = np.concatenate(preds_1val, axis=0)
+    gt = np.concatenate(gt, axis=0)
+    ages = np.arange(0, 101)  # softmax后求期望,得出预测的年龄 DEX!
+    ave_preds = (preds * ages).sum(axis=-1)  # axis=0结果一样?
+    # 分类和回归的结果取平均
+    # ave_preds = (ave_preds + preds_1val) / 2.0
+    diff = ave_preds - gt
+    #mae = np.abs(diff).mean() #diff的平均值作为mae
+    #那么有了diff列表 求cs曲线也是很容易的 就是求列表中数值小于等于阈值e的比重
+    cs = []
+    for e in range(11):
+        count = 0
+        for item in diff:
+            if item <= e:
+                count += 1
+        cs.append(count / len(diff))
+
+    return loss_monitor.avg, accuracy_monitor.avg, cs
 
 def main(mydict):
     print("开始训练时间：")
