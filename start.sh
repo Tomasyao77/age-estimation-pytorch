@@ -26,13 +26,15 @@ then
 	cd ${basepath}
 #	setsid python ./train.py --data_dir=${data_dir} --tensorboard=${tensorboard} --checkpoint=${checkpoint} > ${logs} 2>&1 &
 	setsid python ./train.py > ${logs} 2>&1 &
+#	python ./train.py
 elif [ $1 = "test" ]
 then
 	echo "test..."
 	source activate torchg
 	cd ${basepath}
 	#测试速度很快所以就不在后台运行了
-	python ./test.py > ${logs_test} 2>&1 &
+	setsid python ./test.py > ${logs_test} 2>&1 &
+#	python ./test.py
 elif [ $1 = "demo" ]
 then
 	echo "demo..."

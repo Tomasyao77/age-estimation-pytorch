@@ -14,6 +14,7 @@ _C.BATCH_SIZE = 128
 _C.BASE = "/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"  # 项目根目录
 _C.DATASET = _C.BASE + "/data_dir"
 _C.TF_LOG = _C.BASE + "/tf_log"
+_C.TF_LOG_l1 = _C.BASE + "/tf_log_l1"
 _C.checkpoint = _C.BASE + "/checkpoint"
 
 # dataset

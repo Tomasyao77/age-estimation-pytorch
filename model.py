@@ -39,7 +39,8 @@ def my_model(ifSE):
 
 def main():
     model = get_model()
-    print(model.state_dict())
+    # print(model.state_dict())
+    print(model)
 
 
 # loss
