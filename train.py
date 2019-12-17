@@ -157,6 +157,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
+
 def validate_cs(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     model.eval()
     loss_monitor = AverageMeter()
@@ -205,8 +206,8 @@ def validate_cs(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     # 分类和回归的结果取平均
     # ave_preds = (ave_preds + preds_1val) / 2.0
     diff = ave_preds - gt
-    #mae = np.abs(diff).mean() #diff的平均值作为mae
-    #那么有了diff列表 求cs曲线也是很容易的 就是求列表中数值小于等于阈值e的比重
+    # mae = np.abs(diff).mean() #diff的平均值作为mae
+    # 那么有了diff列表 求cs曲线也是很容易的 就是求列表中数值小于等于阈值e的比重
     cs = []
     for e in range(11):
         count = 0
@@ -216,6 +217,7 @@ def validate_cs(validate_loader, model, criterion, epoch, device, l1loss=0.0):
         cs.append(count / len(diff))
 
     return loss_monitor.avg, accuracy_monitor.avg, cs
+
 
 def main(mydict):
     print("开始训练时间：")
@@ -229,10 +231,11 @@ def main(mydict):
     my_checkpoint = mydict["checkpoint"]
     my_ifSE = mydict["ifSE"]
     my_l1loss = mydict["l1loss"]
-    my_l1value = mydict["l1value"]
+    # my_l1value = mydict["l1value"]
+    my_loss_decay = mydict["loss_decay"]
     if my_l1loss:
-        # l1loss = 0.1
-        l1loss = my_l1value
+        l1loss = 0.0  # 0.1
+        # l1loss = my_l1value
     else:
         l1loss = 0.0
 
@@ -293,7 +296,7 @@ def main(mydict):
     val_loader = DataLoader(val_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
-    scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=cfg.TRAIN.LR_DECAY_RATE,
+    scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=my_loss_decay, #cfg.TRAIN.LR_DECAY_RATE,
                        last_epoch=start_epoch - 1)
     best_val_mae = 10000.0
     train_writer = None
@@ -323,7 +326,7 @@ def main(mydict):
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 2.8:
+            if val_mae < 2.7:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -357,7 +360,7 @@ def main(mydict):
                      "LOSS.l1: ": l1loss,
                      "TRAIN.LR: ": cfg.TRAIN.LR,
                      "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
-                     "TRAIN.LR_DECAY_RATE:": cfg.TRAIN.LR_DECAY_RATE,
+                     "TRAIN.LR_DECAY_RATE:": my_loss_decay, #cfg.TRAIN.LR_DECAY_RATE,
                      "TRAIN.OPT: ": cfg.TRAIN.OPT,
                      "MODEL.ARCH:": cfg.MODEL.ARCH})
     return best_val_mae
@@ -371,6 +374,7 @@ if __name__ == '__main__':
     ckpt = cfg.ckpt[0]
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     l1_arr = cfg.LOSS.l1
+    loss_decay = [0.21, 0.23, 0.25, 0.27, 0.29, 0.31, 0.33, 0.35, 0.37]
     ###########################################################################################################
     ##################morph2##################
     # main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2"], "checkpoint": ckpt["morph2"],
@@ -400,10 +404,12 @@ if __name__ == '__main__':
     # main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2_l1"],
     #       "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True})
     ###########################################################################################################
-    ##################morph2_align_l1##################
-    for l1 in l1_arr:
-        main({"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_l1 + "/morph2_align_l1_" + str(l1),
-            "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True, "l1value": l1})
+    ##################morph2_align_l1 l1loss[0.0-1.0共11次训练]##################
+    for item in loss_decay:
+        main(
+            {"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_decay + "/morph2_align_decay_" + str(item),
+             "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": item})
+        time.sleep(180)
     ###########################################################################################################
 
     end_time = smtp.print_time("全部训练结束!!!")

@@ -15,6 +15,7 @@ _C.BASE = "/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pyto
 _C.DATASET = _C.BASE + "/data_dir"
 _C.TF_LOG = _C.BASE + "/tf_log"
 _C.TF_LOG_l1 = _C.BASE + "/tf_log_l1"
+_C.TF_LOG_decay = _C.BASE + "/tf_log_decay"
 _C.checkpoint = _C.BASE + "/checkpoint"
 
 # dataset
