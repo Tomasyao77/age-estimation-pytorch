@@ -229,6 +229,24 @@ def testall():
     end_time = smtp.print_time("全部测试结束!!!共耗时:")
     print(smtp.date_gap(start_time, end_time))
 
+def test_single():
+    start_time = smtp.print_time("全部开始测试!!!")
+    tf_log = cfg.tf_log[0]
+    ckpt = cfg.ckpt[0]
+    data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
+    test_mae_morph2 = []
+    ###########################################################################################################
+    ##################morph2_align_sfv2##################
+    ckpt_morph2 = os.listdir(ckpt["morph2_align_sfv2"])
+    ckpt_morph2.sort()
+    name = "epoch079_0.02094_2.6708.pth"
+    main({"data_dir": data_dir["morph2_align"], "ifSE": True, "l1loss": False,
+          "resume": ckpt["morph2_align_sfv2"] + "/" + name})
+    # test_mae_morph2_print(test_mae_morph2, "morph2_align_sfv2")
+    ###########################################################################################################
+    end_time = smtp.print_time("全部测试结束!!!共耗时:")
+    print(smtp.date_gap(start_time, end_time))
+
 def test_cs_curve():
     ##################morph2_align_sfv2_l1##################
     ckpt = cfg.ckpt[0]
@@ -247,6 +265,9 @@ if __name__ == '__main__':
     # testall()
     # sys.exit(1)
 
-    test_cs_curve()
+    # test_cs_curve()
+    # sys.exit(1)
+
+    test_single()
     sys.exit(1)
 

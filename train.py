@@ -374,7 +374,7 @@ if __name__ == '__main__':
     ckpt = cfg.ckpt[0]
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     l1_arr = cfg.LOSS.l1
-    loss_decay = [0.21, 0.23, 0.25, 0.27, 0.29, 0.31, 0.33, 0.35, 0.37]
+    loss_decay = [0.22, 0.24, 0.26, 0.28, 0.32, 0.34, 0.36]
     ###########################################################################################################
     ##################morph2##################
     # main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2"], "checkpoint": ckpt["morph2"],
