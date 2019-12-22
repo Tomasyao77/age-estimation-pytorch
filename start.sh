@@ -1,6 +1,7 @@
 #! /bin/bash
 #项目根目录
-basepath="/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"
+#basepath="/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"
+basepath="/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"
 DATE=`date +%Y%m%d_%H%M%S`
 
 data_dir=${basepath}/data_dir/morph2
@@ -10,6 +11,11 @@ checkpoint=${basepath}/checkpoint/morph2
 #log的目录必须存在 上面的目录不存在会自动创建
 logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
 logs_test=${basepath}/logs/morph2_all/${DATE}_morph2_all_test_log
+#单张图片年龄估计
+#img_path=${basepath}/data_dir/morph2-align/morph2_align/158175_23M56.jpg
+#img_path=${basepath}/data_dir/FG-NET/test/001a02.jpg
+img_path=${basepath}/data_dir/CE/110666_514141_9134288_43.0474.jpg
+my_resume=${basepath}/checkpoint/morph2_align/epoch079_0.02094_2.6708.pth
 
 if [ $# -ne 1 ] #有且仅有一个参数，否则退出
 then
@@ -47,6 +53,11 @@ then
     source activate torchg
     cd ${basepath}
 	tensorboard --logdir=${tensorboard}
+elif [ $1 = "age" ]
+then
+#    source activate torchg
+    cd ${basepath}
+	python ./age_estimation.py --img_path=${img_path} --my_resume=${my_resume}
 else
 	echo "do nothing"
 fi

@@ -24,6 +24,10 @@ from defaults import _C as cfg
 import os
 import smtp
 import time
+import cv2
+import sys
+sys.path.append(".")
+from util.mydlib import face_align
 
 
 def get_args():
@@ -219,6 +223,43 @@ def validate_cs(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     return loss_monitor.avg, accuracy_monitor.avg, cs
 
 
+# 估计单张没有标签的人脸图片的年龄
+def validate_age_estimation(img_path, img_size, model, device):
+    model.eval()
+    preds = []
+    preds_1val = []
+
+    # img_path -> tensor
+    # TODO dlib检测
+    # img = cv2.imread(str(img_path), 1)  # 读彩色图
+    img = face_align.pre_age_estimation(img_path)
+
+    img = cv2.resize(img, (img_size, img_size))
+    # cv2.imshow("det", img)
+    # cv2.waitKey(0)
+    img = img.astype(np.float32)
+    x = torch.from_numpy(np.transpose(img, (2, 0, 1)))
+    x = x.unsqueeze(0)  # 增加一个维度伪装成batch_size
+
+    with torch.no_grad():
+        x = x.to(device)
+
+        # compute output
+        outputs, ouput1val = model(x)
+        # outputs = model(x)
+        preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ? 方便后面求期望
+        preds_1val.append(ouput1val.cpu().numpy())
+
+    preds = np.concatenate(preds, axis=0)  # 展开
+    # preds_1val = np.concatenate(preds_1val, axis=0)
+    ages = np.arange(0, 101)  # softmax后求期望,得出预测的年龄 DEX!
+    ave_preds = (preds * ages).sum(axis=-1)  # axis=0结果一样?
+    # 分类和回归的结果取平均
+    # ave_preds = (ave_preds + preds_1val) / 2.0
+
+    return ave_preds[0]
+
+
 def main(mydict):
     print("开始训练时间：")
     start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
@@ -296,7 +337,7 @@ def main(mydict):
     val_loader = DataLoader(val_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
-    scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=my_loss_decay, #cfg.TRAIN.LR_DECAY_RATE,
+    scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
                        last_epoch=start_epoch - 1)
     best_val_mae = 10000.0
     train_writer = None
@@ -360,7 +401,7 @@ def main(mydict):
                      "LOSS.l1: ": l1loss,
                      "TRAIN.LR: ": cfg.TRAIN.LR,
                      "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
-                     "TRAIN.LR_DECAY_RATE:": my_loss_decay, #cfg.TRAIN.LR_DECAY_RATE,
+                     "TRAIN.LR_DECAY_RATE:": my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
                      "TRAIN.OPT: ": cfg.TRAIN.OPT,
                      "MODEL.ARCH:": cfg.MODEL.ARCH})
     return best_val_mae
