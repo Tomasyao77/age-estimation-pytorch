@@ -347,7 +347,7 @@ def main(mydict):
         train_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_train")
         val_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_val")
 
-    for epoch in range(start_epoch, cfg.TRAIN.EPOCHS):
+    for epoch in range(start_epoch, 60): #cfg.TRAIN.EPOCHS):
         # train
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device, l1loss)
 
@@ -366,7 +366,7 @@ def main(mydict):
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 2.8:
+            if val_mae < 4.8:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {

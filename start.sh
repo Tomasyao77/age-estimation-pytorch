@@ -55,7 +55,7 @@ then
     source activate torchg
     cd ${basepath}
 	tensorboard --logdir=${tensorboard}
-elif [ $1 = "age" ]
+elif [ $1 = "age" ] #单张图片年龄估计
 then
 #    source activate torchg
     cd ${basepath}
