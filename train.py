@@ -1,9 +1,12 @@
 import argparse
 import better_exceptions
+import sys
+sys.path.append(".")
 from pathlib import Path
 from collections import OrderedDict
 from tqdm import tqdm
 import numpy as np
+np.set_printoptions(threshold = sys.maxsize)#设置打印数量的阈值
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -25,8 +28,6 @@ import os
 import smtp
 import time
 import cv2
-import sys
-sys.path.append(".")
 from util.mydlib import face_align
 
 
@@ -158,6 +159,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     # ave_preds = (ave_preds + preds_1val) / 2.0
     diff = ave_preds - gt
     mae = np.abs(diff).mean()
+    print(diff)
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 

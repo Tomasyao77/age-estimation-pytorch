@@ -76,7 +76,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, l1loss=0.0):
             y = y.to(device)
 
             # compute output
-            outputs, ouput1val = model(x)
+            outputs = model(x)
             # outputs = model(x)
             # print(outputs)  # 2*numclasses
             # print(ouput1val)  # 2*batchsize
@@ -87,7 +87,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, l1loss=0.0):
             # print(criterion(outputs, y)) #tensor(4.6222, device='cuda:0', grad_fn=<NllLossBackward>)
             # print("criterion_l1(ouput1val, y.float()):")
             # print(criterion_l1(ouput1val, y.float()))  # Long
-            loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
+            loss = criterion(outputs, y)
             cur_loss = loss.item()
 
             # calc accuracy
@@ -127,16 +127,15 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
                 y = y.to(device)
 
                 # compute output
-                outputs, ouput1val = model(x)
+                outputs = model(x)
                 # outputs = model(x)
                 preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ? 方便后面求期望
-                preds_1val.append(ouput1val.cpu().numpy())
                 gt.append(y.cpu().numpy())
 
                 # valid for validation, not used for test
                 if criterion is not None:
                     # calc loss
-                    loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
+                    loss = criterion(outputs, y)
                     cur_loss = loss.item()
 
                     # calc accuracy
@@ -151,7 +150,6 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
                                       acc=accuracy_monitor.avg, correct=correct_num, sample_num=sample_num)
 
     preds = np.concatenate(preds, axis=0)  # 展开
-    preds_1val = np.concatenate(preds_1val, axis=0)
     gt = np.concatenate(gt, axis=0)
     ages = np.arange(0, 101)  # softmax后求期望,得出预测的年龄 DEX!
     ave_preds = (preds * ages).sum(axis=-1)  # axis=0结果一样?
@@ -290,9 +288,9 @@ def main(mydict):
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     # create model_dir
-    print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
-    # model_dir = get_model(model_name=cfg.MODEL.ARCH)
-    model = my_model(my_ifSE)
+    print("=> creating model_dir '{}'".format("se_resnext50_32x4d"))
+    model = get_model(model_name="se_resnext50_32x4d")
+    # model = my_model(my_ifSE)
 
     if cfg.TRAIN.OPT == "sgd":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.TRAIN.LR,
@@ -347,7 +345,7 @@ def main(mydict):
         train_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_train")
         val_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_val")
 
-    for epoch in range(start_epoch, 60): #cfg.TRAIN.EPOCHS):
+    for epoch in range(start_epoch, 80): #cfg.TRAIN.EPOCHS):
         # train
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device, l1loss)
 

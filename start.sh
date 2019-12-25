@@ -11,7 +11,8 @@ tensorboard=${basepath}/tf_log/ceface
 checkpoint=${basepath}/checkpoint/morph2
 #log的目录必须存在 上面的目录不存在会自动创建
 logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
-logs_test=${basepath}/logs/morph2_all/${DATE}_morph2_all_test_log
+#logs_test=${basepath}/logs/morph2_all/${DATE}_morph2_all_test_log
+logs_test=${basepath}/logs/ceface/${DATE}_ceface_test_log
 logs_ceface=${basepath}/logs/ceface/${DATE}_ceface_train_log
 #单张图片年龄估计
 #img_path=${basepath}/data_dir/morph2-align/morph2_align/158175_23M56.jpg

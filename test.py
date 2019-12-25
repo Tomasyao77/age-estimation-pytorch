@@ -13,6 +13,7 @@ from model import get_model
 from model import my_model
 from dataset import FaceDataset_FGNET
 from dataset import FaceDataset_morph2
+from dataset import FaceDataset_ceface
 from defaults import _C as cfg
 from train import validate
 from train import validate_cs
@@ -77,7 +78,11 @@ def main(mydict):
     if device == "cuda":
         cudnn.benchmark = True
 
-    test_dataset = FaceDataset_morph2(my_data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    if "CE_FACE_align" in my_data_dir:
+        test_dataset = FaceDataset_ceface(my_data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+    elif "morph2" in my_data_dir:
+        test_dataset = FaceDataset_morph2(my_data_dir, "test", img_size=cfg.MODEL.IMG_SIZE, augment=False)
+
     test_loader = DataLoader(test_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False,
                              num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
@@ -85,6 +90,7 @@ def main(mydict):
     _, _, test_mae = validate(test_loader, model, None, 0, device, l1loss)
     print(f"test mae: {test_mae:.3f}")
     return test_mae
+
 
 def main_cs(mydict):
     # py脚本额外参数
@@ -134,11 +140,13 @@ def main_cs(mydict):
     print(f"test cs list: {test_cs}")
     return test_cs
 
-#自定义格式化输出 方便复用
+
+# 自定义格式化输出 方便复用
 def test_mae_morph2_print(test_mae_morph2, modelname):
     print(f"{modelname}_test_mae_morph2:{test_mae_morph2}")
     test_mae_morph2.sort()
     print(f"{modelname}_min_test_mae_morph2:{test_mae_morph2[0]}")
+
 
 def log_refine():
     f = open("./logs/20191203_143049_morph2_all_test_log", "r")
@@ -152,6 +160,7 @@ def log_refine():
 
     f.close()
     w.close()
+
 
 def testall():
     start_time = smtp.print_time("全部开始测试!!!")
@@ -229,6 +238,7 @@ def testall():
     end_time = smtp.print_time("全部测试结束!!!共耗时:")
     print(smtp.date_gap(start_time, end_time))
 
+
 def test_single():
     start_time = smtp.print_time("全部开始测试!!!")
     tf_log = cfg.tf_log[0]
@@ -247,6 +257,7 @@ def test_single():
     end_time = smtp.print_time("全部测试结束!!!共耗时:")
     print(smtp.date_gap(start_time, end_time))
 
+
 def test_cs_curve():
     ##################morph2_align_sfv2_l1##################
     ckpt = cfg.ckpt[0]
@@ -254,6 +265,21 @@ def test_cs_curve():
     ckpt_morph2 = "epoch079_0.02798_2.6244.pth"
     main_cs({"data_dir": data_dir["morph2_align"], "ifSE": True, "l1loss": True,
              "resume": ckpt["morph2_align_sfv2_l1"] + "/" + ckpt_morph2})
+
+
+def test_single_ce():
+    start_time = smtp.print_time("全部开始测试!!!")
+    ckpt = cfg.dataset.ceface_align_ckpt
+    data_dir = cfg.dataset.ceface_align
+    ###########################################################################################################
+    ckpt_ce = os.listdir(ckpt)
+    ckpt_ce.sort()
+    name = "epoch057_0.02429_4.7291.pth"
+    main({"data_dir": data_dir, "ifSE": True, "l1loss": False, "resume": cfg.checkpoint + "/ceface/" + name})
+    ###########################################################################################################
+    end_time = smtp.print_time("全部测试结束!!!共耗时:")
+    print(smtp.date_gap(start_time, end_time))
+
 
 if __name__ == '__main__':
     # morph2和morph2_align数据集测试
@@ -268,6 +294,8 @@ if __name__ == '__main__':
     # test_cs_curve()
     # sys.exit(1)
 
-    test_single()
-    sys.exit(1)
+    # test_single()
+    # sys.exit(1)
 
+    test_single_ce()
+    sys.exit(1)
