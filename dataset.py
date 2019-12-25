@@ -137,8 +137,65 @@ class FaceDataset_morph2(Dataset):
     def __init__(self, data_dir, data_type, img_size=224, augment=False, age_stddev=1.0):
         assert (data_type in ("train", "valid", "test"))
         csv_path = Path(data_dir).joinpath(f"gt_avg_{data_type}.csv")
-        img_dir_prefix = data_dir[data_dir.rindex("/")+1:]
-        img_dir = Path(data_dir).joinpath(img_dir_prefix)  # 各种类型图片都在一个目录下
+        img_dir_suffix = data_dir[data_dir.rindex("/") + 1:]
+        img_dir = Path(data_dir).joinpath(img_dir_suffix)  # 各种类型图片都在一个目录下
+        self.img_size = img_size
+        self.augment = augment
+        self.age_stddev = age_stddev
+
+        if augment:
+            self.transform = ImgAugTransform()
+        else:
+            self.transform = lambda i: i
+
+        self.x = []
+        self.y = []
+        self.std = []
+        df = pd.read_csv(str(csv_path))
+        # ignore_path = Path(__file__).resolve().parent.joinpath("ignore_list.csv")
+        # ignore_img_names = list(pd.read_csv(str(ignore_path))["img_name"].values)
+
+        for _, row in df.iterrows():
+            img_name = row["file_name"]
+
+            # if img_name in ignore_img_names:
+            #     continue
+
+            img_path = img_dir.joinpath(img_name)
+            assert (img_path.is_file())
+            self.x.append(str(img_path))
+            self.y.append(row["apparent_age_avg"])
+            self.std.append(row["apparent_age_std"])
+
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, idx):
+        img_path = self.x[idx]
+        age = self.y[idx]
+
+        if self.augment:
+            age += np.random.randn() * self.std[idx] * self.age_stddev  # why?
+
+        img = cv2.imread(str(img_path), 1)  # 读彩色图
+        img = cv2.resize(img, (self.img_size, self.img_size))
+        img = self.transform(img).astype(np.float32)
+        return torch.from_numpy(np.transpose(img, (2, 0, 1))), np.clip(round(age), 0, 100)
+        # ------------np.ndarray转为torch.Tensor------------------------------------
+        # numpy image: H x W x C
+        # torch image:(nSample) x C x H x W
+        # np.transpose(xxx, (2, 0, 1))   # 将 H x W x C 转化为 C x H x W
+
+        # torch image: C x H x W
+        # clip是越界则取边界
+
+
+class FaceDataset_ceface(Dataset):
+    def __init__(self, data_dir, data_type, img_size=224, augment=False, age_stddev=1.0):
+        assert (data_type in ("train", "valid", "test"))
+        csv_path = Path(data_dir).joinpath(f"gt_avg_{data_type}.csv")
+        img_dir_suffix = data_dir[data_dir.rindex("/") + 1:]
+        img_dir = Path(data_dir).joinpath(img_dir_suffix)  # ce的只有align后的，因为图片太大了
         self.img_size = img_size
         self.augment = augment
         self.age_stddev = age_stddev

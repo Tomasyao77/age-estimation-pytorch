@@ -26,6 +26,10 @@ _C.dataset.morph2_align = _C.DATASET + "/morph2_align"
 # FG-NET
 _C.dataset.fgnet_leave1out = _C.DATASET + "/FG-NET-leave1out"
 _C.dataset.fgnet_align_leave1out = _C.DATASET + "/FG-NET_align-leave1out"
+# ceface
+_C.dataset.ceface_align = _C.DATASET + "/CE_FACE_align"
+_C.dataset.ceface_align_tflog = _C.TF_LOG + "/ceface"
+_C.dataset.ceface_align_ckpt = _C.checkpoint + "/ceface"
 
 # tf_log
 _C.tf_log = [{"morph2": _C.TF_LOG + "/morph2", "morph2_align": _C.TF_LOG + "/morph2_align",

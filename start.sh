@@ -1,16 +1,18 @@
 #! /bin/bash
 #项目根目录
-#basepath="/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"
-basepath="/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"
+basepath="/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"
+#basepath="/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"
 DATE=`date +%Y%m%d_%H%M%S`
 
 data_dir=${basepath}/data_dir/morph2
 #0.23, 0.31, 0.33
-tensorboard=${basepath}/tf_log_decay/morph2_align_decay_0.31
+#tensorboard=${basepath}/tf_log_decay/morph2_align_decay_0.31
+tensorboard=${basepath}/tf_log/ceface
 checkpoint=${basepath}/checkpoint/morph2
 #log的目录必须存在 上面的目录不存在会自动创建
 logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
 logs_test=${basepath}/logs/morph2_all/${DATE}_morph2_all_test_log
+logs_ceface=${basepath}/logs/ceface/${DATE}_ceface_train_log
 #单张图片年龄估计
 #img_path=${basepath}/data_dir/morph2-align/morph2_align/158175_23M56.jpg
 #img_path=${basepath}/data_dir/FG-NET/test/001a02.jpg
@@ -58,6 +60,14 @@ then
 #    source activate torchg
     cd ${basepath}
 	python ./age_estimation.py --img_path=${img_path} --my_resume=${my_resume}
+elif [ $1 = "train_ce" ]
+then
+#后台运行训练代码
+	echo "train_ce..."
+	source activate torchg
+	cd ${basepath}
+	setsid python ./train_ce.py > ${logs_ceface} 2>&1 &
+#	python ./train_ce.py
 else
 	echo "do nothing"
 fi
