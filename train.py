@@ -159,7 +159,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     # ave_preds = (ave_preds + preds_1val) / 2.0
     diff = ave_preds - gt
     mae = np.abs(diff).mean()
-    print(diff)
+    # print(diff)
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
@@ -277,7 +277,7 @@ def main(mydict):
     # my_l1value = mydict["l1value"]
     my_loss_decay = mydict["loss_decay"]
     if my_l1loss:
-        l1loss = 0.0  # 0.1
+        l1loss = 0.1  # 0.1
         # l1loss = my_l1value
     else:
         l1loss = 0.0
@@ -420,39 +420,39 @@ if __name__ == '__main__':
     loss_decay = [0.22, 0.24, 0.26, 0.28, 0.32, 0.34, 0.36]
     ###########################################################################################################
     ##################morph2##################
-    # main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2"], "checkpoint": ckpt["morph2"],
-    #       "ifSE": False, "l1loss": False})
-    # time.sleep(180)  # sleep 3 min
-    # main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_l1"], "checkpoint": ckpt["morph2_l1"],
-    #       "ifSE": False, "l1loss": True})
-    # time.sleep(180)
-    # main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2"], "checkpoint": ckpt["morph2_sfv2"],
-    #       "ifSE": True, "l1loss": False})
-    # time.sleep(180)
-    # main(
-    #     {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2_l1"], "checkpoint": ckpt["morph2_sfv2_l1"],
-    #      "ifSE": True, "l1loss": True})
-    # time.sleep(180)
+    main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2"], "checkpoint": ckpt["morph2"],
+          "ifSE": False, "l1loss": False, "loss_decay": 0.3})
+    time.sleep(180)  # sleep 3 min
+    main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_l1"], "checkpoint": ckpt["morph2_l1"],
+          "ifSE": False, "l1loss": True, "loss_decay": 0.3})
+    time.sleep(180)
+    main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2"], "checkpoint": ckpt["morph2_sfv2"],
+          "ifSE": True, "l1loss": False, "loss_decay": 0.3})
+    time.sleep(180)
+    main(
+        {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2_l1"], "checkpoint": ckpt["morph2_sfv2_l1"],
+         "ifSE": True, "l1loss": True, "loss_decay": 0.3})
+    time.sleep(180)
     ###########################################################################################################
     ##################morph2_align##################
-    # main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align"],
-    #       "checkpoint": ckpt["morph2_align"], "ifSE": False, "l1loss": False})
-    # time.sleep(180)
-    # main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_l1"],
-    #       "checkpoint": ckpt["morph2_align_l1"], "ifSE": False, "l1loss": True})
-    # time.sleep(180)
-    # main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2"],
-    #       "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": False})
-    # time.sleep(180)
-    # main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2_l1"],
-    #       "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True})
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align"],
+          "checkpoint": ckpt["morph2_align"], "ifSE": False, "l1loss": False, "loss_decay": 0.3})
+    time.sleep(180)
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_l1"],
+          "checkpoint": ckpt["morph2_align_l1"], "ifSE": False, "l1loss": True, "loss_decay": 0.3})
+    time.sleep(180)
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2"],
+          "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": False, "loss_decay": 0.3})
+    time.sleep(180)
+    main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2_l1"],
+          "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True, "loss_decay": 0.3})
     ###########################################################################################################
     ##################morph2_align_l1 l1loss[0.0-1.0共11次训练]##################
-    for item in loss_decay:
-        main(
-            {"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_decay + "/morph2_align_decay_" + str(item),
-             "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": item})
-        time.sleep(180)
+    # for item in loss_decay:
+    #     main(
+    #         {"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_decay + "/morph2_align_decay_" + str(item),
+    #          "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": item})
+    #     time.sleep(180)
     ###########################################################################################################
 
     end_time = smtp.print_time("全部训练结束!!!")

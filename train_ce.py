@@ -4,6 +4,10 @@ from pathlib import Path
 from collections import OrderedDict
 from tqdm import tqdm
 import numpy as np
+import sys
+
+sys.path.append(".")
+np.set_printoptions(threshold=sys.maxsize)  # 设置打印数量的阈值
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -25,9 +29,6 @@ import os
 import smtp
 import time
 import cv2
-import sys
-
-sys.path.append(".")
 from util.mydlib import face_align
 
 
@@ -76,7 +77,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, l1loss=0.0):
             y = y.to(device)
 
             # compute output
-            outputs = model(x)
+            outputs, _ = model(x)
             # outputs = model(x)
             # print(outputs)  # 2*numclasses
             # print(ouput1val)  # 2*batchsize
@@ -157,6 +158,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     # ave_preds = (ave_preds + preds_1val) / 2.0
     diff = ave_preds - gt
     mae = np.abs(diff).mean()
+    print(np.abs(diff))
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
@@ -289,8 +291,8 @@ def main(mydict):
 
     # create model_dir
     print("=> creating model_dir '{}'".format("se_resnext50_32x4d"))
-    model = get_model(model_name="se_resnext50_32x4d")
-    # model = my_model(my_ifSE)
+    # model = get_model(model_name="se_resnext50_32x4d")
+    model = my_model(my_ifSE)
 
     if cfg.TRAIN.OPT == "sgd":
         optimizer = torch.optim.SGD(model.parameters(), lr=cfg.TRAIN.LR,
@@ -345,7 +347,7 @@ def main(mydict):
         train_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_train")
         val_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_val")
 
-    for epoch in range(start_epoch, 80): #cfg.TRAIN.EPOCHS):
+    for epoch in range(start_epoch, 80):  # cfg.TRAIN.EPOCHS):
         # train
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device, l1loss)
 

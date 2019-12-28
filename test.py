@@ -17,6 +17,7 @@ from dataset import FaceDataset_ceface
 from defaults import _C as cfg
 from train import validate
 from train import validate_cs
+from train_ce import validate as validate_ce
 import shutil
 import os
 import smtp
@@ -59,8 +60,8 @@ def main(mydict):
 
     # create model_dir
     print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
-    # model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
-    model = my_model(my_ifSE)
+    model = get_model(pretrained=None)
+    # model = my_model(my_ifSE)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
 
@@ -87,7 +88,10 @@ def main(mydict):
                              num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
     print("=> start testing")
-    _, _, test_mae = validate(test_loader, model, None, 0, device, l1loss)
+    if "CE_FACE_align" in my_data_dir:
+        _, _, test_mae = validate_ce(test_loader, model, None, 0, device, l1loss)
+    elif "morph2" in my_data_dir:
+        _, _, test_mae = validate(test_loader, model, None, 0, device, l1loss)
     print(f"test mae: {test_mae:.3f}")
     return test_mae
 
@@ -274,7 +278,7 @@ def test_single_ce():
     ###########################################################################################################
     ckpt_ce = os.listdir(ckpt)
     ckpt_ce.sort()
-    name = "epoch057_0.02429_4.7291.pth"
+    name = "epoch026_0.02471_3.8915.pth"
     main({"data_dir": data_dir, "ifSE": True, "l1loss": False, "resume": cfg.checkpoint + "/ceface/" + name})
     ###########################################################################################################
     end_time = smtp.print_time("全部测试结束!!!共耗时:")

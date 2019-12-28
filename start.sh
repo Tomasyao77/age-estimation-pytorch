@@ -6,8 +6,8 @@ DATE=`date +%Y%m%d_%H%M%S`
 
 data_dir=${basepath}/data_dir/morph2
 #0.23, 0.31, 0.33
-#tensorboard=${basepath}/tf_log_decay/morph2_align_decay_0.31
-tensorboard=${basepath}/tf_log/ceface
+tensorboard=${basepath}/tf_log/morph2_l1
+#tensorboard=${basepath}/tf_log/ceface
 checkpoint=${basepath}/checkpoint/morph2
 #log的目录必须存在 上面的目录不存在会自动创建
 logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
