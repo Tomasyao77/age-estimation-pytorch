@@ -13,10 +13,13 @@ _C.MODEL.IMG_SIZE = 224
 _C.BATCH_SIZE = 128
 _C.BASE = "/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"  # 项目根目录
 _C.DATASET = _C.BASE + "/data_dir"
-_C.TF_LOG = _C.BASE + "/tf_log/symmetry1"
+_C.TF_LOG = _C.BASE + "/tf_log/symmetry3"
+#symmetry1 sfv2 ma_sfv2没有aug align_sfv2 align_ma_sfv2有aug
+#symmetry2 都有aug
+#symmetry3 都没有aug 40epoch 因为好像过拟合了
 _C.TF_LOG_l1 = _C.BASE + "/tf_log_l1"
 _C.TF_LOG_decay = _C.BASE + "/tf_log_decay"
-_C.checkpoint = _C.BASE + "/checkpoint/symmetry1"
+_C.checkpoint = _C.BASE + "/checkpoint/symmetry3"
 
 # dataset
 _C.dataset = CN()
@@ -49,9 +52,9 @@ _C.TRAIN = CN()
 _C.TRAIN.OPT = "adam"  # adam or sgd
 _C.TRAIN.WORKERS = 8
 _C.TRAIN.LR = 0.001
-_C.TRAIN.LR_DECAY_STEP = 20  # 20
+_C.TRAIN.LR_DECAY_STEP = 10  # 20
 _C.TRAIN.LR_DECAY_RATE = 0.2  # 0.2
-_C.TRAIN.EPOCHS = 80  # senet: 70(morph2) 20足以(fgnet) 20足以(fgnet_align)
+_C.TRAIN.EPOCHS = 40  # senet: 70(morph2) 20足以(fgnet) 20足以(fgnet_align)
 # sgd
 _C.TRAIN.MOMENTUM = 0.9
 _C.TRAIN.WEIGHT_DECAY = 0.0

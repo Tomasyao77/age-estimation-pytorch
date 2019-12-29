@@ -252,6 +252,7 @@ def test_single():
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     test_mae_morph2 = []
     ckpt_morph2 = os.listdir(ckpt)
+    ckpt_morph2 = ["epoch061_0.02777_2.6729.pth"]
     ckpt_morph2.sort()
     ###########################################################################################################
     # name = "epoch074_0.02785_2.6663.pth"
