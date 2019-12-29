@@ -22,6 +22,8 @@ import shutil
 import os
 import smtp
 import sys
+import numpy as np
+np.set_printoptions(threshold = sys.maxsize)#设置打印数量的阈值
 from tqdm import tqdm
 
 
@@ -60,8 +62,8 @@ def main(mydict):
 
     # create model_dir
     print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
-    model = get_model(pretrained=None)
-    # model = my_model(my_ifSE)
+    # model = get_model(pretrained=None) #ce
+    model = my_model(my_ifSE)  # sfv2
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
 
@@ -246,20 +248,23 @@ def testall():
 def test_single():
     start_time = smtp.print_time("全部开始测试!!!")
     tf_log = cfg.tf_log[0]
-    ckpt = cfg.ckpt[0]
+    ckpt = cfg.checkpoint + "/morph2_align_sfv2_l1"  # cfg.ckpt[0]
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     test_mae_morph2 = []
-    ###########################################################################################################
-    ##################morph2_align_sfv2##################
-    ckpt_morph2 = os.listdir(ckpt["morph2_align_sfv2"])
+    ckpt_morph2 = os.listdir(ckpt)
     ckpt_morph2.sort()
-    name = "epoch079_0.02094_2.6708.pth"
-    main({"data_dir": data_dir["morph2_align"], "ifSE": True, "l1loss": False,
-          "resume": ckpt["morph2_align_sfv2"] + "/" + name})
-    # test_mae_morph2_print(test_mae_morph2, "morph2_align_sfv2")
+    ###########################################################################################################
+    # name = "epoch074_0.02785_2.6663.pth"
+    for name in ckpt_morph2:
+        test_mae_morph2.append(
+            main({"data_dir": data_dir["morph2_align"], "ifSE": True, "l1loss": True,
+                  "resume": ckpt + "/" + name}))
+    test_mae_morph2_print(test_mae_morph2, "morph2_align_sfv2_l1")
     ###########################################################################################################
     end_time = smtp.print_time("全部测试结束!!!共耗时:")
     print(smtp.date_gap(start_time, end_time))
+    # x = [2.701818006661657, 2.689736532889146, 2.6904311899211746, 2.683811223389752, 2.685205794410008,
+    #      2.670989310441985, 2.677572674194235, 2.6728254348107345, 2.6750793457901487]
 
 
 def test_cs_curve():
@@ -298,8 +303,8 @@ if __name__ == '__main__':
     # test_cs_curve()
     # sys.exit(1)
 
-    # test_single()
-    # sys.exit(1)
-
-    test_single_ce()
+    test_single()
     sys.exit(1)
+
+    # test_single_ce()
+    # sys.exit(1)

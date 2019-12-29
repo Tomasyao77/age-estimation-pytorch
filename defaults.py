@@ -13,10 +13,10 @@ _C.MODEL.IMG_SIZE = 224
 _C.BATCH_SIZE = 128
 _C.BASE = "/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"  # 项目根目录
 _C.DATASET = _C.BASE + "/data_dir"
-_C.TF_LOG = _C.BASE + "/tf_log/symmetry"
+_C.TF_LOG = _C.BASE + "/tf_log/symmetry1"
 _C.TF_LOG_l1 = _C.BASE + "/tf_log_l1"
 _C.TF_LOG_decay = _C.BASE + "/tf_log_decay"
-_C.checkpoint = _C.BASE + "/checkpoint/symmetry"
+_C.checkpoint = _C.BASE + "/checkpoint/symmetry1"
 
 # dataset
 _C.dataset = CN()
