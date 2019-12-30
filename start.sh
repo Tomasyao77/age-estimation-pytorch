@@ -6,14 +6,15 @@ DATE=`date +%Y%m%d_%H%M%S`
 
 data_dir=${basepath}/data_dir/morph2
 #0.23, 0.31, 0.33
-tensorboard=${basepath}/tf_log/symmetry1/morph2_sfv2_l1
+tensorboard=${basepath}/tf_log/symmetry4/morph2_align_sfv2_l1
 #tensorboard=${basepath}/tf_log/ceface
-checkpoint=${basepath}/checkpoint/morph2
+checkpoint=${basepath}/checkpoint/morph2d
 #log的目录必须存在 上面的目录不存在会自动创建
 logs=${basepath}/logs/morph2_all/${DATE}_morph2_all_train_log
 logs_test=${basepath}/logs/morph2_all/${DATE}_morph2_all_test_log
 #logs_test=${basepath}/logs/ceface/${DATE}_ceface_test_log
 logs_ceface=${basepath}/logs/ceface/${DATE}_ceface_train_log
+logs_boxplot=${basepath}/checkpoint/${DATE}_morph2_all_boxplot_log
 #单张图片年龄估计
 #img_path=${basepath}/data_dir/morph2-align/morph2_align/158175_23M56.jpg
 #img_path=${basepath}/data_dir/FG-NET/test/001a02.jpg
@@ -69,6 +70,13 @@ then
 	cd ${basepath}
 	setsid python ./train_ce.py > ${logs_ceface} 2>&1 &
 #	python ./train_ce.py
+elif [ $1 = "boxplot_morph2" ]
+then
+#后台运行训练代码
+	echo "boxplot_morph2..."
+	source activate torchg
+	cd ${basepath}
+	setsid python ./util.py > ${logs_boxplot} 2>&1 &
 else
 	echo "do nothing"
 fi

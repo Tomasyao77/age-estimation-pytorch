@@ -279,6 +279,7 @@ def main(mydict):
     # my_l1value = mydict["l1value"]
     my_loss_decay = mydict["loss_decay"]
     my_aug = mydict["augment"]
+    my_resume = mydict["resume"]
     if my_l1loss:
         l1loss = 0.1  # 0.1
         # l1loss = my_l1value
@@ -311,7 +312,7 @@ def main(mydict):
     model = model.to(device)
 
     # optionally resume from a checkpoint
-    resume_path = args.resume
+    resume_path = my_resume  # args.resume
     if resume_path:
         print(Path(resume_path).is_file())
         if Path(resume_path).is_file():
@@ -356,6 +357,7 @@ def main(mydict):
         val_writer = SummaryWriter(log_dir=my_tensorboard + "/" + opts_prefix + "_val")
 
     for epoch in range(start_epoch, cfg.TRAIN.EPOCHS):
+        # for epoch in range(1):
         # train
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device, l1loss)
         train_loss_list.append(train_loss)
@@ -371,11 +373,11 @@ def main(mydict):
             val_writer.add_scalar("acc", val_acc, epoch)
             val_writer.add_scalar("mae", val_mae, epoch)
 
-        if val_mae < best_val_mae:
+        if val_mae < best_val_mae or val_mae > 0:
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 3.5:#几乎就是40epoch之后的都会保存
+            if val_mae < 3.5:  # 几乎就是40epoch之后的都会保存
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -400,21 +402,21 @@ def main(mydict):
     print(end_time)
     print("训练耗时: " + smtp.date_gap(start_time, end_time))
     # 发邮件
-    smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
-                     "训练耗时: ": smtp.date_gap(start_time, end_time),
-                     "最低val_mae: ": best_val_mae,
-                     "平均val_mae: ": np.array(val_mae_list).mean(),
-                     "vale_mae_list: ": val_mae_list,
-                     "train_loss_list: ": train_loss_list,
-                     "val_loss_list: ": val_loss_list,
-                     "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
-                     "BATCH_SIZE: ": cfg.BATCH_SIZE,
-                     "LOSS.l1: ": l1loss,
-                     "TRAIN.LR: ": cfg.TRAIN.LR,
-                     "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
-                     "TRAIN.LR_DECAY_RATE:": my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
-                     "TRAIN.OPT: ": cfg.TRAIN.OPT,
-                     "MODEL.ARCH:": cfg.MODEL.ARCH})
+    # smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
+    #                  "训练耗时: ": smtp.date_gap(start_time, end_time),
+    #                  "最低val_mae: ": best_val_mae,
+    #                  "平均val_mae: ": np.array(val_mae_list).mean(),
+    #                  "vale_mae_list: ": val_mae_list,
+    #                  "train_loss_list: ": train_loss_list,
+    #                  "val_loss_list: ": val_loss_list,
+    #                  "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
+    #                  "BATCH_SIZE: ": cfg.BATCH_SIZE,
+    #                  "LOSS.l1: ": l1loss,
+    #                  "TRAIN.LR: ": cfg.TRAIN.LR,
+    #                  "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
+    #                  "TRAIN.LR_DECAY_RATE:": my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
+    #                  "TRAIN.OPT: ": cfg.TRAIN.OPT,
+    #                  "MODEL.ARCH:": cfg.MODEL.ARCH})
     return best_val_mae, val_mae_list
 
 
@@ -427,26 +429,37 @@ if __name__ == '__main__':
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     l1_arr = cfg.LOSS.l1
     loss_decay = [0.22, 0.24, 0.26, 0.28, 0.32, 0.34, 0.36]
-    final_arr_collect = {"1": [], "2": [], "3": [], "4": [],"5": [], "6": [], "7": [], "8": []}
+    final_arr_collect = {"1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": []}
+    ###########################################################################################################
+    # 调试特征图可视化
+    # main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align"],
+    #       "checkpoint": ckpt["morph2_align"],
+    #       "ifSE": False, "l1loss": False, "loss_decay": 0.2, "augment": True})
+    # exit(1)
     ###########################################################################################################
     ##################morph2##################
     # _, main1 = main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2"], "checkpoint": ckpt["morph2"],
     #       "ifSE": False, "l1loss": False, "loss_decay": 0.2, "augment": True})
     # final_arr_collect["1"] = main1
     # time.sleep(120)  # sleep
-    _, main2 = main(
-        {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_l1"], "checkpoint": ckpt["morph2_l1"],
-         "ifSE": False, "l1loss": True, "loss_decay": 0.2, "augment": True})
-    final_arr_collect["2"] = main2
+    for i in range(5):
+        _, main2 = main(
+            {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_l1"], "checkpoint": ckpt["morph2_l1"],
+             "ifSE": False, "l1loss": True, "loss_decay": 0.2, "augment": True,
+             "resume": cfg.checkpoint + "/morph2_l1/epoch073_0.02867_2.8416.pth"})
+    # final_arr_collect["2"] = main2
     time.sleep(120)
     # _, main3 = main({"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2"], "checkpoint": ckpt["morph2_sfv2"],
     #       "ifSE": True, "l1loss": False, "loss_decay": 0.2, "augment": True})
     # final_arr_collect["3"] = main3
     # time.sleep(120)
-    _, main4 = main(
-        {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2_l1"], "checkpoint": ckpt["morph2_sfv2_l1"],
-         "ifSE": True, "l1loss": True, "loss_decay": 0.2, "augment": True})
-    final_arr_collect["4"] = main4
+    for i in range(8):
+        _, main4 = main(
+            {"data_dir": data_dir["morph2"], "tensorboard": tf_log["morph2_sfv2_l1"],
+             "checkpoint": ckpt["morph2_sfv2_l1"],
+             "ifSE": True, "l1loss": True, "loss_decay": 0.2, "augment": True,
+             "resume": cfg.checkpoint + "/morph2_sfv2_l1/epoch077_0.02861_2.8287.pth"})
+    # final_arr_collect["4"] = main4
     time.sleep(120)
     ###########################################################################################################
     ##################morph2_align##################
@@ -454,19 +467,22 @@ if __name__ == '__main__':
     #       "checkpoint": ckpt["morph2_align"], "ifSE": False, "l1loss": False, "loss_decay": 0.2, "augment": True})
     # final_arr_collect["5"] = main5
     # time.sleep(120)
-    _, main6 = main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_l1"],
-                     "checkpoint": ckpt["morph2_align_l1"], "ifSE": False, "l1loss": True, "loss_decay": 0.2,
-                     "augment": True})
-    final_arr_collect["6"] = main6
+    for i in range(8):
+        _, main6 = main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_l1"],
+                         "checkpoint": ckpt["morph2_align_l1"], "ifSE": False, "l1loss": True, "loss_decay": 0.2,
+                         "augment": True, "resume": cfg.checkpoint + "/morph2_align_l1/epoch076_0.02793_2.7252.pth"})
+    # final_arr_collect["6"] = main6
     time.sleep(120)
     # _, main7 = main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2"],
     #       "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": False, "loss_decay": 0.2, "augment": True})
     # final_arr_collect["7"] = main7
     # time.sleep(120)
-    _, main8 = main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2_l1"],
-                     "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True, "loss_decay": 0.2,
-                     "augment": True})
-    final_arr_collect["8"] = main8
+    for i in range(8):
+        _, main8 = main({"data_dir": data_dir["morph2_align"], "tensorboard": tf_log["morph2_align_sfv2_l1"],
+                         "checkpoint": ckpt["morph2_align_sfv2_l1"], "ifSE": True, "l1loss": True, "loss_decay": 0.2,
+                         "augment": True,
+                         "resume": cfg.checkpoint + "/morph2_align_sfv2_l1/epoch078_0.02791_2.6376.pth"})
+    # final_arr_collect["8"] = main8
     ###########################################################################################################
     ##################morph2_align_l1 l1loss[0.0-1.0共11次训练]##################
     # for item in loss_decay:

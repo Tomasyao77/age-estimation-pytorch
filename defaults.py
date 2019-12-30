@@ -12,15 +12,16 @@ _C.MODEL.IMG_SIZE = 224
 # base
 _C.BATCH_SIZE = 128
 _C.BASE = "/media/d9lab/data11/tomasyao/workspace/pycharm_ws/age-estimation-pytorch"  # 项目根目录
+# _C.BASE = "/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"  # 项目根目录
 _C.DATASET = _C.BASE + "/data_dir"
-_C.TF_LOG = _C.BASE + "/tf_log/symmetry4"
+_C.TF_LOG = _C.BASE + "/tf_log"
 #symmetry1 sfv2 ma_sfv2没有aug align_sfv2 align_ma_sfv2有aug
 #symmetry2 都有aug #symmetry2/morph2_align_sfv2_l1奇怪(因为只训练到40epoch就停掉了哈哈)
 #symmetry3 都没有aug 40epoch 因为好像过拟合了
 #symmetry4 只训练sfv2_l1 sfv2_ma_l1 align_sfv2_l1 align_sfv2_ma_l1,都有aug因为不用就过拟合,40epoch之后都保存
 _C.TF_LOG_l1 = _C.BASE + "/tf_log_l1"
 _C.TF_LOG_decay = _C.BASE + "/tf_log_decay"
-_C.checkpoint = _C.BASE + "/checkpoint/symmetry4"
+_C.checkpoint = _C.BASE + "/checkpoint"
 
 # dataset
 _C.dataset = CN()
