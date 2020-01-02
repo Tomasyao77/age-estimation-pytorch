@@ -128,7 +128,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
                 y = y.to(device)
 
                 # compute output
-                outputs = model(x)
+                outputs, _ = model(x)
                 # outputs = model(x)
                 preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ? 方便后面求期望
                 gt.append(y.cpu().numpy())
@@ -158,7 +158,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
     # ave_preds = (ave_preds + preds_1val) / 2.0
     diff = ave_preds - gt
     mae = np.abs(diff).mean()
-    print(np.abs(diff))
+    # print(np.abs(diff))
 
     return loss_monitor.avg, accuracy_monitor.avg, mae
 
@@ -274,7 +274,7 @@ def main(mydict):
     my_ifSE = mydict["ifSE"]
     my_l1loss = mydict["l1loss"]
     if my_l1loss:
-        l1loss = 0.0  # 0.1
+        l1loss = 0.1  # 0.1
         # l1loss = my_l1value
     else:
         l1loss = 0.0
@@ -366,7 +366,7 @@ def main(mydict):
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 4.8:
+            if val_mae < 3.5:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -415,6 +415,8 @@ if __name__ == '__main__':
     data_dir = cfg.dataset.ceface_align
     ###########################################################################################################
     main({"data_dir": data_dir, "tensorboard": tf_log, "checkpoint": ckpt, "ifSE": True, "l1loss": False})
+    time.sleep(180)
+    main({"data_dir": data_dir, "tensorboard": tf_log, "checkpoint": ckpt, "ifSE": True, "l1loss": True})
     ###########################################################################################################
     end_time = smtp.print_time("全部训练结束!!!")
     print(smtp.date_gap(start_time, end_time))
