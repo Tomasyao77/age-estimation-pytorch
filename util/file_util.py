@@ -3,11 +3,11 @@ import os
 
 
 def log():
-    f = open("../logs/20191126_145955_train_log_l1loss", "r")
-    w = open("../logs/20191126_145955_train_log_l1loss1", "a")
+    f = open("../logs/20191231_155519_morph2_all_test_log", "r")
+    w = open("../logs/20191231_155519_morph2_all_test_log1", "a")
     lines = f.readlines()  # 读取全部内容
     for line in lines:
-        if 'best val mae' in line:
+        if '_mae_morph2:' in line:
             w.write(line)
             # print(line)
 

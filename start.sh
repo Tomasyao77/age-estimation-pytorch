@@ -6,7 +6,7 @@ DATE=`date +%Y%m%d_%H%M%S`
 
 data_dir=${basepath}/data_dir/morph2
 #0.23, 0.31, 0.33
-tensorboard=${basepath}/tf_log/symmetry4/morph2_align_sfv2_l1
+tensorboard=${basepath}/tf_log_decay/morph2_align_decay_0.2
 #tensorboard=${basepath}/tf_log/ceface
 checkpoint=${basepath}/checkpoint/morph2d
 #log的目录必须存在 上面的目录不存在会自动创建
@@ -44,8 +44,8 @@ then
 	source activate torchg
 	cd ${basepath}
 	#测试速度很快所以就不在后台运行了
-#	setsid python ./test.py > ${logs_test} 2>&1 &
-	python ./test.py
+	setsid python ./test.py > ${logs_test} 2>&1 &
+#	python ./test.py
 elif [ $1 = "demo" ]
 then
 	echo "demo..."

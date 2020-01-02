@@ -176,13 +176,13 @@ def testall():
     test_mae_morph2 = []
     ###########################################################################################################
     ##################morph2##################
-    ckpt_morph2 = os.listdir(ckpt["morph2"])
-    ckpt_morph2.sort()
-    for name in ckpt_morph2:
-        test_mae_morph2.append(
-            main({"data_dir": data_dir["morph2"], "ifSE": False, "l1loss": False,
-                  "resume": ckpt["morph2"] + "/" + name}))
-    test_mae_morph2_print(test_mae_morph2, "morph2")
+    # ckpt_morph2 = os.listdir(ckpt["morph2"])
+    # ckpt_morph2.sort()
+    # for name in ckpt_morph2:
+    #     test_mae_morph2.append(
+    #         main({"data_dir": data_dir["morph2"], "ifSE": False, "l1loss": False,
+    #               "resume": ckpt["morph2"] + "/" + name}))
+    # test_mae_morph2_print(test_mae_morph2, "morph2")
     ##################morph2_l1##################
     ckpt_morph2 = os.listdir(ckpt["morph2_l1"])
     ckpt_morph2.sort()
@@ -192,13 +192,13 @@ def testall():
                   "resume": ckpt["morph2_l1"] + "/" + name}))
     test_mae_morph2_print(test_mae_morph2, "morph2_l1")
     ##################morph2_sfv2##################
-    ckpt_morph2 = os.listdir(ckpt["morph2_sfv2"])
-    ckpt_morph2.sort()
-    for name in ckpt_morph2:
-        test_mae_morph2.append(
-            main({"data_dir": data_dir["morph2"], "ifSE": True, "l1loss": False,
-                  "resume": ckpt["morph2_sfv2"] + "/" + name}))
-    test_mae_morph2_print(test_mae_morph2, "morph2_sfv2")
+    # ckpt_morph2 = os.listdir(ckpt["morph2_sfv2"])
+    # ckpt_morph2.sort()
+    # for name in ckpt_morph2:
+    #     test_mae_morph2.append(
+    #         main({"data_dir": data_dir["morph2"], "ifSE": True, "l1loss": False,
+    #               "resume": ckpt["morph2_sfv2"] + "/" + name}))
+    # test_mae_morph2_print(test_mae_morph2, "morph2_sfv2")
     ##################morph2_sfv2_l1##################
     ckpt_morph2 = os.listdir(ckpt["morph2_sfv2_l1"])
     ckpt_morph2.sort()
@@ -209,13 +209,13 @@ def testall():
     test_mae_morph2_print(test_mae_morph2, "morph2_sfv2_l1")
     ###########################################################################################################
     ##################morph2_align##################
-    ckpt_morph2 = os.listdir(ckpt["morph2_align"])
-    ckpt_morph2.sort()
-    for name in ckpt_morph2:
-        test_mae_morph2.append(
-            main({"data_dir": data_dir["morph2_align"], "ifSE": False, "l1loss": False,
-                  "resume": ckpt["morph2_align"] + "/" + name}))
-    test_mae_morph2_print(test_mae_morph2, "morph2_align")
+    # ckpt_morph2 = os.listdir(ckpt["morph2_align"])
+    # ckpt_morph2.sort()
+    # for name in ckpt_morph2:
+    #     test_mae_morph2.append(
+    #         main({"data_dir": data_dir["morph2_align"], "ifSE": False, "l1loss": False,
+    #               "resume": ckpt["morph2_align"] + "/" + name}))
+    # test_mae_morph2_print(test_mae_morph2, "morph2_align")
     ##################morph2_align_l1##################
     ckpt_morph2 = os.listdir(ckpt["morph2_align_l1"])
     ckpt_morph2.sort()
@@ -225,13 +225,13 @@ def testall():
                   "resume": ckpt["morph2_align_l1"] + "/" + name}))
     test_mae_morph2_print(test_mae_morph2, "morph2_align_l1")
     ##################morph2_align_sfv2##################
-    ckpt_morph2 = os.listdir(ckpt["morph2_align_sfv2"])
-    ckpt_morph2.sort()
-    for name in ckpt_morph2:
-        test_mae_morph2.append(
-            main({"data_dir": data_dir["morph2_align"], "ifSE": True, "l1loss": False,
-                  "resume": ckpt["morph2_align_sfv2"] + "/" + name}))
-    test_mae_morph2_print(test_mae_morph2, "morph2_align_sfv2")
+    # ckpt_morph2 = os.listdir(ckpt["morph2_align_sfv2"])
+    # ckpt_morph2.sort()
+    # for name in ckpt_morph2:
+    #     test_mae_morph2.append(
+    #         main({"data_dir": data_dir["morph2_align"], "ifSE": True, "l1loss": False,
+    #               "resume": ckpt["morph2_align_sfv2"] + "/" + name}))
+    # test_mae_morph2_print(test_mae_morph2, "morph2_align_sfv2")
     ##################morph2_align_sfv2_l1##################
     ckpt_morph2 = os.listdir(ckpt["morph2_align_sfv2_l1"])
     ckpt_morph2.sort()
@@ -298,14 +298,14 @@ if __name__ == '__main__':
     # log_refine()
     # sys.exit(1)
     #
-    # testall()
-    # sys.exit(1)
+    testall()
+    sys.exit(1)
 
     # test_cs_curve()
     # sys.exit(1)
 
-    test_single()
-    sys.exit(1)
+    # test_single()
+    # sys.exit(1)
 
     # test_single_ce()
     # sys.exit(1)

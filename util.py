@@ -37,9 +37,9 @@ if __name__ == '__main__':
 
     #get 8groups ckpt array[]
     checkpoint = cfg.BASE + "/checkpoint"
-    ckpt = [{"morph2": checkpoint + "/morph2", "morph2_align": checkpoint + "/morph2_align",
+    ckpt = [{ # "morph2": checkpoint + "/morph2", "morph2_align": checkpoint + "/morph2_align",
              "morph2_l1": checkpoint + "/morph2_l1", "morph2_align_l1": checkpoint + "/morph2_align_l1",
-             "morph2_sfv2": checkpoint + "/morph2_sfv2", "morph2_align_sfv2": checkpoint + "/morph2_align_sfv2",
+             # "morph2_sfv2": checkpoint + "/morph2_sfv2", "morph2_align_sfv2": checkpoint + "/morph2_align_sfv2",
              "morph2_sfv2_l1": checkpoint + "/morph2_sfv2_l1",
              "morph2_align_sfv2_l1": checkpoint + "/morph2_align_sfv2_l1"}]
     for k, v in enumerate(ckpt[0]):
@@ -50,7 +50,6 @@ if __name__ == '__main__':
             arr.append(float(item.split("_")[-1][:-4]))
         print("result: ", v)
         print(arr)
-        print("\n")
         print("mean: ", str(np.array(arr).mean()))
         print("\n")
 
