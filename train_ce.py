@@ -77,7 +77,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, l1loss=0.0):
             y = y.to(device)
 
             # compute output
-            outputs, _ = model(x)
+            outputs, ouput1val = model(x)
             # outputs = model(x)
             # print(outputs)  # 2*numclasses
             # print(ouput1val)  # 2*batchsize
@@ -88,7 +88,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, l1loss=0.0):
             # print(criterion(outputs, y)) #tensor(4.6222, device='cuda:0', grad_fn=<NllLossBackward>)
             # print("criterion_l1(ouput1val, y.float()):")
             # print(criterion_l1(ouput1val, y.float()))  # Long
-            loss = criterion(outputs, y)
+            loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
             cur_loss = loss.item()
 
             # calc accuracy
@@ -128,7 +128,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
                 y = y.to(device)
 
                 # compute output
-                outputs, _ = model(x)
+                outputs, ouput1val = model(x)
                 # outputs = model(x)
                 preds.append(F.softmax(outputs, dim=-1).cpu().numpy())  # ? * 101 ? 方便后面求期望
                 gt.append(y.cpu().numpy())
@@ -136,7 +136,7 @@ def validate(validate_loader, model, criterion, epoch, device, l1loss=0.0):
                 # valid for validation, not used for test
                 if criterion is not None:
                     # calc loss
-                    loss = criterion(outputs, y)
+                    loss = criterion(outputs, y) + criterion_l1(ouput1val, y.float()) * l1loss
                     cur_loss = loss.item()
 
                     # calc accuracy
@@ -341,6 +341,8 @@ def main(mydict):
     best_val_mae = 10000.0
     train_writer = None
     val_mae_list = []
+    train_loss_list = []
+    val_loss_list = []
 
     if my_tensorboard is not None:
         opts_prefix = "_".join(args.opts)
@@ -350,10 +352,12 @@ def main(mydict):
     for epoch in range(start_epoch, 80):  # cfg.TRAIN.EPOCHS):
         # train
         train_loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, device, l1loss)
+        train_loss_list.append(train_loss)
 
         # validate
         val_loss, val_acc, val_mae = validate(val_loader, model, criterion, epoch, device, l1loss)
         val_mae_list.append(val_mae)
+        val_loss_list.append(val_loss)
 
         if my_tensorboard is not None:
             train_writer.add_scalar("loss", train_loss, epoch)
@@ -362,11 +366,11 @@ def main(mydict):
             val_writer.add_scalar("acc", val_acc, epoch)
             val_writer.add_scalar("mae", val_mae, epoch)
 
-        if val_mae < best_val_mae:
+        if val_mae < best_val_mae or val_mae > 0:
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 3.5:
+            if val_mae < 4.0:
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -395,6 +399,9 @@ def main(mydict):
                      "训练耗时: ": smtp.date_gap(start_time, end_time),
                      "最低val_mae: ": best_val_mae,
                      "平均val_mae: ": np.array(val_mae_list).mean(),
+                     "vale_mae_list: ": val_mae_list,
+                     "train_loss_list: ": train_loss_list,
+                     "val_loss_list: ": val_loss_list,
                      "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
                      "BATCH_SIZE: ": cfg.BATCH_SIZE,
                      "LOSS.l1: ": l1loss,
@@ -415,6 +422,10 @@ if __name__ == '__main__':
     data_dir = cfg.dataset.ceface_align
     ###########################################################################################################
     main({"data_dir": data_dir, "tensorboard": tf_log, "checkpoint": ckpt, "ifSE": True, "l1loss": False})
+    time.sleep(180)
+    main({"data_dir": data_dir, "tensorboard": tf_log, "checkpoint": ckpt, "ifSE": True, "l1loss": False})
+    time.sleep(180)
+    main({"data_dir": data_dir, "tensorboard": tf_log, "checkpoint": ckpt, "ifSE": True, "l1loss": True})
     time.sleep(180)
     main({"data_dir": data_dir, "tensorboard": tf_log, "checkpoint": ckpt, "ifSE": True, "l1loss": True})
     ###########################################################################################################
