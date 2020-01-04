@@ -44,8 +44,8 @@ then
 	source activate torchg
 	cd ${basepath}
 	#测试速度很快所以就不在后台运行了
-	setsid python ./test.py > ${logs_test} 2>&1 &
-#	python ./test.py
+#	setsid python ./test.py > ${logs_test} 2>&1 &
+	python ./test.py
 elif [ $1 = "demo" ]
 then
 	echo "demo..."

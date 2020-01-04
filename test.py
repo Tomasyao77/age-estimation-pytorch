@@ -23,7 +23,8 @@ import os
 import smtp
 import sys
 import numpy as np
-np.set_printoptions(threshold = sys.maxsize)#设置打印数量的阈值
+
+np.set_printoptions(threshold=sys.maxsize)  # 设置打印数量的阈值
 from tqdm import tqdm
 
 
@@ -283,10 +284,18 @@ def test_single_ce():
     data_dir = cfg.dataset.ceface_align
     ###########################################################################################################
     ckpt_ce = os.listdir(ckpt)
-    ckpt_ce.sort()
-    name = "epoch026_0.02471_3.8915.pth"
-    main({"data_dir": data_dir, "ifSE": True, "l1loss": False, "resume": cfg.checkpoint + "/ceface/" + name})
+    name = "epoch079_0.02709_3.7538.pth"
+    test_mae_arr = []
+    for item in ckpt_ce:
+        #验证的时候l1loss没什么用
+        test_mae_arr.append(main({"data_dir": data_dir, "ifSE": True, "l1loss": False,
+              "resume": cfg.dataset.ceface_align_ckpt + "/" + item}))
     ###########################################################################################################
+    print("test_mae_arr: ", test_mae_arr)
+    print("test_mae_mean: ", np.mean(test_mae_arr))
+    print("test_mae_min: ", min(test_mae_arr))
+    print("test_mae_max: ", max(test_mae_arr))
+
     end_time = smtp.print_time("全部测试结束!!!共耗时:")
     print(smtp.date_gap(start_time, end_time))
 
@@ -298,8 +307,8 @@ if __name__ == '__main__':
     # log_refine()
     # sys.exit(1)
     #
-    testall()
-    sys.exit(1)
+    # testall()
+    # sys.exit(1)
 
     # test_cs_curve()
     # sys.exit(1)
@@ -307,5 +316,5 @@ if __name__ == '__main__':
     # test_single()
     # sys.exit(1)
 
-    # test_single_ce()
-    # sys.exit(1)
+    test_single_ce()
+    sys.exit(1)
