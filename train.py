@@ -428,8 +428,7 @@ if __name__ == '__main__':
     ckpt = cfg.ckpt[0]
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     l1_arr = cfg.LOSS.l1
-    loss_decay = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17,
-                  0.18, 0.19]
+    loss_decay = [0.18, 0.19, 0.38, 0.39, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     final_arr_collect = {"1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": []}
     ###########################################################################################################
     # 调试特征图可视化
@@ -491,7 +490,7 @@ if __name__ == '__main__':
             {"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_decay + "/morph2_align_decay_" + str(item),
              "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": item,
              "augment": True})
-        time.sleep(120)
+        time.sleep(180)
     ###########################################################################################################
     print(final_arr_collect)
     end_time = smtp.print_time("全部训练结束!!!")
