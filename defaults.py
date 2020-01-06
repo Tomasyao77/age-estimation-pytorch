@@ -21,6 +21,7 @@ _C.TF_LOG = _C.BASE + "/tf_log"
 #symmetry4 只训练sfv2_l1 sfv2_ma_l1 align_sfv2_l1 align_sfv2_ma_l1,都有aug因为不用就过拟合,40epoch之后都保存
 _C.TF_LOG_l1 = _C.BASE + "/tf_log_l1"
 _C.TF_LOG_decay = _C.BASE + "/tf_log_decay"
+_C.TF_LOG_decay_step = _C.BASE + "/tf_log_step"
 _C.checkpoint = _C.BASE + "/checkpoint"
 
 # dataset

@@ -279,6 +279,7 @@ def main(mydict):
     # my_l1value = mydict["l1value"]
     my_loss_decay = mydict["loss_decay"]
     my_aug = mydict["augment"]
+    my_loss_decay_step = mydict["loss_decay_step"]
     # my_resume = mydict["resume"]
     if my_l1loss:
         l1loss = 0.1  # 0.1
@@ -343,7 +344,8 @@ def main(mydict):
     val_loader = DataLoader(val_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False,
                             num_workers=cfg.TRAIN.WORKERS, drop_last=False)
 
-    scheduler = StepLR(optimizer, step_size=cfg.TRAIN.LR_DECAY_STEP, gamma=my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
+    # my_loss_decay_step cfg.TRAIN.LR_DECAY_STEP my_loss_decay cfg.TRAIN.LR_DECAY_RATE
+    scheduler = StepLR(optimizer, step_size=my_loss_decay_step, gamma=my_loss_decay,
                        last_epoch=start_epoch - 1)
     best_val_mae = 10000.0
     train_writer = None
@@ -402,21 +404,21 @@ def main(mydict):
     print(end_time)
     print("训练耗时: " + smtp.date_gap(start_time, end_time))
     # 发邮件
-    # smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
-    #                  "训练耗时: ": smtp.date_gap(start_time, end_time),
-    #                  "最低val_mae: ": best_val_mae,
-    #                  "平均val_mae: ": np.array(val_mae_list).mean(),
-    #                  "vale_mae_list: ": val_mae_list,
-    #                  "train_loss_list: ": train_loss_list,
-    #                  "val_loss_list: ": val_loss_list,
-    #                  "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
-    #                  "BATCH_SIZE: ": cfg.BATCH_SIZE,
-    #                  "LOSS.l1: ": l1loss,
-    #                  "TRAIN.LR: ": cfg.TRAIN.LR,
-    #                  "TRAIN.LR_DECAY_STEP: ": cfg.TRAIN.LR_DECAY_STEP,
-    #                  "TRAIN.LR_DECAY_RATE:": my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
-    #                  "TRAIN.OPT: ": cfg.TRAIN.OPT,
-    #                  "MODEL.ARCH:": cfg.MODEL.ARCH})
+    smtp.main(dict_={"共训练epochs: ": cfg.TRAIN.EPOCHS,
+                     "训练耗时: ": smtp.date_gap(start_time, end_time),
+                     "最低val_mae: ": best_val_mae,
+                     "平均val_mae: ": np.array(val_mae_list).mean(),
+                     "vale_mae_list: ": val_mae_list,
+                     "train_loss_list: ": train_loss_list,
+                     "val_loss_list: ": val_loss_list,
+                     "MODEL.IMG_SIZE: ": cfg.MODEL.IMG_SIZE,
+                     "BATCH_SIZE: ": cfg.BATCH_SIZE,
+                     "LOSS.l1: ": l1loss,
+                     "TRAIN.LR: ": cfg.TRAIN.LR,
+                     "TRAIN.LR_DECAY_STEP: ": my_loss_decay_step, #cfg.TRAIN.LR_DECAY_STEP,
+                     "TRAIN.LR_DECAY_RATE:": my_loss_decay,  # cfg.TRAIN.LR_DECAY_RATE,
+                     "TRAIN.OPT: ": cfg.TRAIN.OPT,
+                     "MODEL.ARCH:": cfg.MODEL.ARCH})
     return best_val_mae, val_mae_list
 
 
@@ -429,6 +431,7 @@ if __name__ == '__main__':
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     l1_arr = cfg.LOSS.l1
     loss_decay = [0.18, 0.19, 0.38, 0.39, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    loss_decay_step = [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80]
     final_arr_collect = {"1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": []}
     ###########################################################################################################
     # 调试特征图可视化
@@ -485,11 +488,18 @@ if __name__ == '__main__':
     # final_arr_collect["8"] = main8
     ###########################################################################################################
     ##################morph2_align_l1 l1loss[0.0-1.0共11次训练]##################
-    for item in loss_decay:
+    # for item in loss_decay:
+    #     main(
+    #         {"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_decay + "/morph2_align_decay_" + str(item),
+    #          "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": item,
+    #          "augment": True})
+    #     time.sleep(180)
+    for item in loss_decay_step:
         main(
-            {"data_dir": data_dir["morph2_align"], "tensorboard": cfg.TF_LOG_decay + "/morph2_align_decay_" + str(item),
-             "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": item,
-             "augment": True})
+            {"data_dir": data_dir["morph2_align"],
+             "tensorboard": cfg.TF_LOG_decay_step + "/morph2_align_step_" + str(item),
+             "checkpoint": ckpt["morph2_align_sfv2"], "ifSE": True, "l1loss": True, "loss_decay": 0.2,
+             "augment": True, "loss_decay_step": item})
         time.sleep(180)
     ###########################################################################################################
     print(final_arr_collect)
