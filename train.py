@@ -379,7 +379,7 @@ def main(mydict):
             print(f"=> [epoch {epoch:03d}] best val mae was improved from {best_val_mae:.3f} to {val_mae:.3f}")
             best_val_mae = val_mae
             # checkpoint
-            if val_mae < 2.5:  # 几乎就是40epoch之后的都会保存
+            if val_mae < 2.6:  # 几乎就是40epoch之后的都会保存
                 model_state_dict = model.module.state_dict() if args.multi_gpu else model.state_dict()
                 torch.save(
                     {
@@ -431,7 +431,7 @@ if __name__ == '__main__':
     data_dir = {"morph2": cfg.dataset.morph2, "morph2_align": cfg.dataset.morph2_align}
     l1_arr = cfg.LOSS.l1
     loss_decay = [0.18, 0.19, 0.38, 0.39, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    loss_decay_step = [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80]
+    loss_decay_step = [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80] #25开始曲线不好看
     final_arr_collect = {"1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": []}
     ###########################################################################################################
     # 调试特征图可视化

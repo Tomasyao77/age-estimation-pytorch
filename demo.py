@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append(".")
 import argparse
 import better_exceptions
 from pathlib import Path
@@ -12,7 +15,9 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
 import torch.nn.functional as F
-from model_dir import get_model
+
+from model import get_model
+from model import my_model
 from defaults import _C as cfg
 
 
@@ -97,7 +102,8 @@ def main():
 
     # create model_dir
     print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
-    model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
+    # model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
+    model = my_model(True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
     print(device)
@@ -107,7 +113,8 @@ def main():
     resume_path = args.resume
 
     if resume_path is None:
-        resume_path = Path(__file__).resolve().parent.joinpath("misc", "epoch044_0.02343_3.9984.pth")  # 参数pth
+        # resume_path = Path(__file__).resolve().parent.joinpath("misc", "epoch044_0.02343_3.9984.pth")  # 参数pth
+        resume_path = Path(__file__).resolve().parent.joinpath("checkpoint/morph2_align", "epoch079_0.02094_2.6708.pth")  # 参数pth
 
         if not resume_path.is_file():
             print(f"=> model_dir path is not set; start downloading trained model_dir to {resume_path}")
@@ -138,6 +145,8 @@ def main():
 
     with torch.no_grad():
         for img, name in image_generator:
+            if not "3.jpg" in name:
+                continue
             input_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img_h, img_w, _ = np.shape(input_img)
 
@@ -158,7 +167,8 @@ def main():
 
                 # predict ages
                 inputs = torch.from_numpy(np.transpose(faces.astype(np.float32), (0, 3, 1, 2))).to(device)
-                outputs = F.softmax(model(inputs), dim=-1).cpu().numpy()
+                outputs_, ouput1val = model(inputs)
+                outputs = F.softmax(outputs_, dim=-1).cpu().numpy()
                 ages = np.arange(0, 101)
                 predicted_ages = (outputs * ages).sum(axis=-1)
                 # gt age
