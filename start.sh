@@ -21,13 +21,13 @@ logs_boxplot=${basepath}/checkpoint/${DATE}_morph2_all_boxplot_log
 img_path=${basepath}/data_dir/CE/110666_514141_9134288_43.0474.jpg
 my_resume=${basepath}/checkpoint/morph2_align/epoch079_0.02094_2.6708.pth
 
-if [ $# -ne 1 ] #有且仅有一个参数，否则退出
-then
-	echo "Usage: /start.sh train[|test|demo]"
-	exit 1
-else
-	echo "starting..."
-fi
+#if [ $# -ne 1 ] #有且仅有一个参数，否则退出
+#then
+#	echo "Usage: /start.sh train[|test|demo]"
+#	exit 1
+#else
+#	echo "starting..."
+#fi
 
 if [ $1 = "train" ]
 then
@@ -80,15 +80,17 @@ then
 #毕业论文中第四章java后台调用python代码进行年龄估计
 elif [ $1 = "graduate_age_estimation" ]
 then
-	echo "graduate_age_estimation..."
-	echo $PATH
+	#echo "graduate_age_estimation..."
+	#echo $PATH
 	# java调用shell环境变量没有继承，所以要手动声明，尴尬
 	export PATH=/media/zouy/workspace/desktop/ana3/bin:$PATH
 	source activate torch #cpu only
 	basepath_="/media/zouy/workspace/gitcloneroot/age-estimation-pytorch"
 	cd ${basepath_}
-	python ./demo.py --img_dir=${basepath_}/img_dir --output_dir=${basepath_}/output_dir
+	#result=`python ./demo.py --img_dir=${basepath_}/img_dir --output_dir=${basepath_}/output_dir`
+	result=`python ./demo.py --img_dir=$2 --output_dir=${basepath_}/output_dir`
 	#--resume=${checkpoint}/epoch079_0.02234_2.2617.pth
+	echo ${result}
 else
 	echo "do nothing"
 fi

@@ -5,6 +5,7 @@ import argparse
 import better_exceptions
 from pathlib import Path
 from contextlib import contextmanager
+
 import urllib.request
 import numpy as np
 import cv2
@@ -75,12 +76,27 @@ def yield_images_from_dir(img_dir):
     img_dir = Path(img_dir)
 
     for img_path in img_dir.glob("*.*"):
-        img = cv2.imread(str(img_path), 1)
+        #img = cv2.imread(str(img_path), 1)
+        #url = "https://face.ceks100.com/group1/M0B/BD/60/cx2hu16f3HSAK6NBAFZph60dSC8832.jpg"
+        url = "https://face.ceks100.com/group1/M0B/CC/AA/cx2hu16rfBSAcOQ3AAAYbagvzig051.jpg"
+        resp = urllib.request.urlopen(url)
+        image = np.asarray(bytearray(resp.read()), dtype="uint8")
+        img = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
         if img is not None:
             h, w, _ = img.shape
             r = 640 / max(w, h)
             yield cv2.resize(img, (int(w * r), int(h * r))), img_path.name
+
+def yield_images_from_url(url):
+    resp = urllib.request.urlopen(url)
+    image = np.asarray(bytearray(resp.read()), dtype="uint8")
+    img = cv2.imdecode(image, cv2.IMREAD_COLOR)
+
+    if img is not None:
+        h, w, _ = img.shape
+        r = 640 / max(w, h)
+        yield cv2.resize(img, (int(w * r), int(h * r))), url
 
 
 def main():
@@ -101,12 +117,12 @@ def main():
         # exist_ok：只有在目录不存在时创建目录，目录已存在时不会抛出异常
 
     # create model_dir
-    print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
+    #print("=> creating model_dir '{}'".format(cfg.MODEL.ARCH))
     # model = get_model(model_name=cfg.MODEL.ARCH, pretrained=None)
     model = my_model(True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
-    print(device)
+    #print(device)
     model = model.to(device)
 
     # load checkpoint
@@ -117,17 +133,17 @@ def main():
         resume_path = Path(__file__).resolve().parent.joinpath("checkpoint/morph2_align", "epoch079_0.02094_2.6708.pth")  # 参数pth
 
         if not resume_path.is_file():
-            print(f"=> model_dir path is not set; start downloading trained model_dir to {resume_path}")
+            #print(f"=> model_dir path is not set; start downloading trained model_dir to {resume_path}")
             url = "https://github.com/yu4u/age-estimation-pytorch/releases/download/v1.0/epoch044_0.02343_3.9984.pth"
             urllib.request.urlretrieve(url, str(resume_path))
-            print("=> download finished")
+            #print("=> download finished")
 
     if Path(resume_path).is_file():
-        print("=> loading checkpoint '{}'".format(resume_path))
+        #print("=> loading checkpoint '{}'".format(resume_path))
         checkpoint = torch.load(resume_path, map_location="cpu")
         # checkpoint = torch.load(resume_path)
         model.load_state_dict(checkpoint['state_dict'])
-        print("=> loaded checkpoint '{}'".format(resume_path))
+        #print("=> loaded checkpoint '{}'".format(resume_path))
     else:
         raise ValueError("=> no checkpoint found at '{}'".format(resume_path))
 
@@ -141,12 +157,12 @@ def main():
     img_dir = args.img_dir
     detector = dlib.get_frontal_face_detector()
     img_size = cfg.MODEL.IMG_SIZE  # default 224
-    image_generator = yield_images_from_dir(img_dir) if img_dir else yield_images()
+    image_generator = yield_images_from_url(img_dir) if img_dir else yield_images()
 
     with torch.no_grad():
         for img, name in image_generator:
-            if not "3.jpg" in name:
-                continue
+            # if not "3.jpg" in name:
+            #     continue
             input_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img_h, img_w, _ = np.shape(input_img)
 
@@ -154,6 +170,7 @@ def main():
             detected = detector(input_img, 1)
             faces = np.empty((len(detected), img_size, img_size, 3))  # 不理解
 
+            age_result = 0
             if len(detected) > 0:
                 for i, d in enumerate(detected):
                     x1, y1, x2, y2, w, h = d.left(), d.top(), d.right() + 1, d.bottom() + 1, d.width(), d.height()
@@ -172,8 +189,10 @@ def main():
                 ages = np.arange(0, 101)
                 predicted_ages = (outputs * ages).sum(axis=-1)
                 # gt age
-                gt_age = abs(int(name[-6:name.index(".")]) - int(predicted_ages[0]))
-                print(f"{name}-predicted_ages:{predicted_ages} diff:{str(gt_age)}")
+                #gt_age = abs(int(name[-6:name.index(".")]) - int(predicted_ages[0]))
+                #print(f"{name}-predicted_ages:{predicted_ages} diff:{str(gt_age)}")
+                age_result = predicted_ages[0]
+                print(age_result)
 
                 # draw results
                 for i, d in enumerate(detected):
@@ -189,6 +208,8 @@ def main():
 
                 if key == 27:  # ESC
                     break
+
+            return age_result
 
 
 if __name__ == '__main__':
